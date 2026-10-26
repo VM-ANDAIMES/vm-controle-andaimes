@@ -17,6 +17,9 @@ export default function App() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loginError, setLoginError] = useState('')
+  const [recoveringPassword, setRecoveringPassword] = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmNewPassword, setConfirmNewPassword] = useState('')
   const [tab, setTab] = useState<Tab>('painel')
   const [scaffolds, setScaffolds] = useState<Scaffold[]>([])
   const [inspections, setInspections] = useState<Inspection[]>([])
@@ -52,7 +55,13 @@ export default function App() {
   useEffect(() => {
     if (!supabase) return
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, next) => setSession(next))
+    const { data: listener } = supabase.auth.onAuthStateChange((event, next) => {
+      setSession(next)
+      if (event === 'PASSWORD_RECOVERY') {
+        setRecoveringPassword(true)
+        setLoginError('')
+      }
+    })
     return () => listener.subscription.unsubscribe()
   }, [])
 
@@ -91,6 +100,35 @@ export default function App() {
     }
   }
 
+  async function saveNewPassword(e: FormEvent) {
+    e.preventDefault()
+    if (!supabase) return
+
+    if (newPassword.length < 8) {
+      setLoginError('A nova senha precisa ter pelo menos 8 caracteres.')
+      return
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setLoginError('As senhas nao conferem.')
+      return
+    }
+
+    setLoginError('')
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+
+    if (error) {
+      setLoginError('Nao foi possivel alterar a senha: ' + error.message)
+      return
+    }
+
+    await supabase.auth.signOut()
+    setSession(null)
+    setRecoveringPassword(false)
+    setNewPassword('')
+    setConfirmNewPassword('')
+    setLoginError('Senha alterada com sucesso. Entre com sua nova senha.')
+  }
   async function logout() { await supabase?.auth.signOut(); setScaffolds([]); setInspections([]) }
 
   function openNew() {
@@ -151,6 +189,7 @@ export default function App() {
   }
 
   if (!isSupabaseConfigured) return <SetupScreen />
+if (recoveringPassword) return <div className="login-page"><div className="login-card"><div className="brand-mark"><Construction size={30}/></div><p className="eyebrow">VM ANDAIMES</p><h1>Nova <span>senha</span></h1><p className="muted">Cadastre sua nova senha para acessar o sistema.</p><form onSubmit={saveNewPassword} className="stack"><label>Nova senha<input type="password" required minLength={8} autoComplete="new-password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="Minimo de 8 caracteres"/></label><label>Confirmar nova senha<input type="password" required minLength={8} autoComplete="new-password" value={confirmNewPassword} onChange={e=>setConfirmNewPassword(e.target.value)} placeholder="Digite a senha novamente"/></label>{loginError && <p className="error">{loginError}</p>}<button className="btn primary full" type="submit">Salvar nova senha</button></form></div></div>
   if (!session) return <div className="login-page"><div className="login-card"><div className="brand-mark"><Construction size={30}/></div><p className="eyebrow">VM ANDAIMES</p><h1>Controle de <span>Andaimes</span></h1><p className="muted">Entre para acompanhar montagens, inspeÃ§Ãµes e retiradas.</p><form onSubmit={login} className="stack"><label>E-mail<input type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="seu@email.com"/></label><label>Senha<input type="password" required value={password} onChange={e=>setPassword(e.target.value)} placeholder="Sua senha"/></label><button type="button" onClick={recoverPassword} style={{ background: 'none', border: 0, color: '#f57c00', cursor: 'pointer', padding: 0, textAlign: 'left' }}>Esqueci minha senha</button>{loginError && <p className="error">{loginError}</p>}<button className="btn primary full" type="submit">Entrar no sistema</button></form><p className="login-foot"><ShieldCheck size={15}/> Acesso restrito a usuÃ¡rios autorizados</p></div></div>
 
   return <div className="app-shell">
@@ -221,4 +260,5 @@ function Modal({title,onClose,children}:{title:string,onClose:()=>void,children:
 function SetupScreen() {
   return <div className="login-page"><div className="login-card setup-card"><div className="brand-mark"><Construction size={30}/></div><p className="eyebrow">VM ANDAIMES</p><h1>Quase pronto!</h1><p className="muted">O site estÃ¡ instalado, mas falta conectar o banco de dados Supabase.</p><ol><li>Crie um projeto Supabase.</li><li>Execute o arquivo <code>supabase/schema.sql</code> no SQL Editor.</li><li>Copie <code>.env.example</code> para <code>.env</code>.</li><li>Preencha a URL do projeto e a chave pÃºblica anon.</li><li>Reinicie o servidor com <code>npm run dev</code>.</li></ol><p className="warning-text"><ShieldCheck size={16}/> Nunca coloque a chave <code>service_role</code> neste site.</p></div></div>
 }
+
 
