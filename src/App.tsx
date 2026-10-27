@@ -604,23 +604,6 @@ export default function App() {
       </main>
     )
   }
-
-  // Não exibe o aplicativo até que o perfil tenha sido consultado.
-  if (role === null) {
-    return (
-      <div className="login-page">
-        <div className="login-card">
-          <div className="brand-mark brand-logo permission-logo">
-            <img src="/logo-vm.png" alt="Logo VM Andaimes" />
-          </div>
-          <p className="eyebrow">VM ANDAIMES</p>
-          <h1>Verificando <span>permissões</span></h1>
-          <p className="muted">Aguarde enquanto validamos seu acesso.</p>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -1303,4 +1286,8 @@ function SetupScreen() {
       </div>
     </div>
   )
+}
+// Aguarda a verificação do perfil sem exibir uma tela intermediária.
+if (role === null) {
+  return null
 }
