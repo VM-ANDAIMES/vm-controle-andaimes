@@ -8,90 +8,77 @@
 @media(max-width:720px){.sidebar{position:static;width:auto;height:auto;padding:12px 14px;display:block}.brand{padding:0 4px 13px}.brand-mark{width:40px;height:40px}.side-label,.sidebar .nav-item:not(.active),.sidebar-bottom{display:none}.sidebar .nav-item.active{display:inline-flex;width:auto;padding:9px 12px;margin:0}.main-area{margin-left:0;padding:19px 14px 30px}.topbar{align-items:flex-start;flex-direction:column;margin-bottom:18px}.topbar h1{font-size:23px}.top-actions{width:100%;flex-wrap:wrap}.top-actions .btn{margin-left:auto}.welcome{padding:22px;min-height:150px}.welcome h2{font-size:19px;max-width:340px}.welcome-icon{width:65px;height:65px;margin:0 0 0 10px;border-radius:18px}.welcome-icon svg{width:36px}.stats-grid{gap:10px;margin:12px 0}.stat-card{padding:13px}.stat-top{font-size:10px;align-items:flex-start}.stat-icon{width:29px;height:29px}.stat-card>strong{font-size:26px}.panel{padding:14px}.panel-heading{align-items:flex-start}.panel-heading h2{font-size:14px}.panel-heading .btn{padding:9px;font-size:10px}.filters{flex-direction:column}.filters select{max-width:none}.form-grid{grid-template-columns:1fr;gap:13px}.form-grid .wide{grid-column:auto}.modal{padding:18px}.detail-grid{grid-template-columns:1fr 1fr}.online-dot{font-size:10px}.loading-line{left:0}}
 @media(max-width:420px){.stats-grid{grid-template-columns:1fr 1fr}.stat-top{display:block}.stat-icon{margin-top:7px}.welcome-icon{display:none}.top-actions .btn{padding:9px}.detail-grid{grid-template-columns:1fr}.login-card{padding:25px}}
 
-
-/* LOGO VM - AJUSTE FINAL */
+/* AJUSTES DAS LOGOS VM ANDAIMES — preserva a logo da tela de login */
+/* Logo no menu lateral: maior e com fundo branco para destacar no menu preto */
 .sidebar .brand-mark.brand-logo {
-  width: 48px;
-  height: 48px;
-  padding: 0;
-  margin: 0;
+  width: 58px !important;
+  height: 58px !important;
+  min-width: 58px;
+  padding: 5px !important;
+  margin: 0 !important;
+  background: #fff !important;
+  border: 1px solid #f0f0f0;
+  border-radius: 10px !important;
   overflow: hidden;
-  background: transparent;
-  border-radius: 0;
+  display: grid !important;
+  place-items: center;
   flex-shrink: 0;
 }
-
-.login-card > .brand-mark.brand-logo {
-  width: 48px;
-  height: 48px;
-  padding: 0;
-  margin: 0 0 16px;
-  overflow: hidden;
-  background: transparent;
-  border-radius: 0;
-}
-
-.brand-mark.brand-logo img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: center;
-  display: block;
-}
-
-.welcome-icon.brand-logo {
-  display: none;
-}
-
-/* Banner do painel: não exibir a logo completa */
-.welcome-icon.brand-logo {
-  display: none;
-}
-.brand-logo img{width:100%;height:100%;object-fit:contain;display:block}
-.welcome-icon.brand-logo{transform:none;background:#fff;padding:8px;border-radius:18px}.welcome-icon.brand-logo img{width:100%;height:100%;object-fit:contain;display:block}.login-card .brand-logo{overflow:hidden;background:#fff;padding:5px}.login-card .brand-logo img{width:100%;height:100%;object-fit:contain;display:block}
-.login-card>.brand-logo{width:110px;height:110px;border-radius:16px;padding:5px;margin-bottom:22px}.login-card>.brand-logo img{width:100%;height:100%;object-fit:contain;display:block}
-
-/* LOGO VM - AJUSTE DEFINITIVO */
-
-/* Símbolo da marca no menu lateral */
-.sidebar .brand-mark.brand-logo {
-  width: 48px;
-  height: 48px;
-  padding: 0;
-  overflow: hidden;
-  background: transparent;
-  border-radius: 0;
-  flex-shrink: 0;
-}
-
 .sidebar .brand-mark.brand-logo img {
+  display: block;
   width: 100%;
   height: 100%;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
   object-position: center;
-  display: block;
 }
 
-/* Símbolo da marca na tela de login */
-.login-card > .brand-mark.brand-logo {
-  width: 48px;
-  height: 48px;
-  padding: 0;
-  margin-bottom: 16px;
-  overflow: hidden;
-  background: transparent;
-  border-radius: 0;
-}
-
-.login-card > .brand-mark.brand-logo img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: center;
-  display: block;
-}
-
-/* Remove a logo gigante do banner do painel */
+/* Logo do painel: fundo branco para não escurecer a imagem */
 .welcome-icon.brand-logo {
-  display: none;
+  width: 90px !important;
+  height: 90px !important;
+  min-width: 90px;
+  margin-right: 20px;
+  padding: 7px !important;
+  background: #fff !important;
+  border: 2px solid var(--orange);
+  border-radius: 14px !important;
+  overflow: hidden;
+  transform: none !important;
+  display: grid !important;
+  place-items: center;
+  flex-shrink: 0;
+}
+.welcome-icon.brand-logo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+@media (max-width: 720px) {
+  .sidebar .brand-mark.brand-logo {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px;
+    padding: 4px !important;
+  }
+  .welcome-icon.brand-logo {
+    width: 60px !important;
+    height: 60px !important;
+    min-width: 60px;
+    margin-left: 8px;
+    margin-right: 0;
+    padding: 5px !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .welcome-icon.brand-logo {
+    display: none !important;
+  }
 }
