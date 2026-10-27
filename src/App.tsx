@@ -1383,7 +1383,7 @@ function ScaffoldTable({
                           <ArrowDownToLine size={16}/>
                         </button>
                       )}
-                      {onDelete && s.status === 'retirado' && (
+                      {onDelete && (
                         <button
                           className="mini-btn danger"
                           title="Excluir definitivamente"
