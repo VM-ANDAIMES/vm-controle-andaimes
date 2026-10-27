@@ -894,14 +894,14 @@ export default function App() {
     />
   </label>
 
-  <label>Cliente              <input
-                required
-                value={form.client}
-                onChange={e => setForm({ ...form, client: e.target.value })}
-                placeholder="Nome do cliente"
-              />
-            </label>
-            <label>Obra / local
+    <label>Cliente <input
+      required
+      value={form.client}
+      onChange={e => setForm({ ...form, client: e.target.value })}
+      placeholder="Nome do cliente"
+    />
+ </label>         
+             <label>Obra / local
               <input
                 required
                 value={form.work_site}
