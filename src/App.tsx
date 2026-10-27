@@ -1,9 +1,10 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
+import { jsPDF } from 'jspdf'
 import {
   Activity, AlertTriangle, ArrowDownToLine, Check, ClipboardList,
   Clock3, Construction, Database, FilePlus2, LogOut, Plus,
-  RefreshCw, Search, ShieldCheck, Trash2, X
+  RefreshCw, Search, ShieldCheck, Trash2, X, FileText
 } from 'lucide-react'
 import {
   conditionLabel, daysMounted, Inspection, isSupabaseConfigured,
@@ -44,6 +45,7 @@ export default function App() {
   const [notice, setNotice] = useState('')
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('todos')
+  const [pdfType, setPdfType] = useState<'montados' | 'desmontados' | 'todos'>('todos')
 
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Scaffold | null>(null)
@@ -446,7 +448,159 @@ export default function App() {
       await loadData()
     }
   }
+async function exportPdf() {
+  const selected = scaffolds.filter((item) => {
+    if (pdfType === 'montados') return item.status !== 'retirado'
+    if (pdfType === 'desmontados') return item.status === 'retirado'
+    return true
+  })
 
+  if (selected.length === 0) {
+    alert('Não há andaimes para incluir neste relatório.')
+    return
+  }
+
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const pageWidth = pdf.internal.pageSize.getWidth()
+  const pageHeight = pdf.internal.pageSize.getHeight()
+  const margin = 14
+  let y = 16
+
+  const addPageIfNeeded = (needed = 12) => {
+    if (y + needed > pageHeight - 18) {
+      pdf.addPage()
+      y = 18
+    }
+  }
+
+  const write = (label: string, value: unknown) => {
+    const text = `${label}: ${value || 'Não informado'}`
+    const lines = pdf.splitTextToSize(text, pageWidth - margin * 2)
+    addPageIfNeeded(lines.length * 5 + 3)
+    pdf.text(lines, margin, y)
+    y += lines.length * 5 + 2
+  }
+
+  try {
+    const response = await fetch('/logo-vm.png')
+    if (response.ok) {
+      const blob = await response.blob()
+      const logo = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(String(reader.result))
+        reader.onerror = reject
+        reader.readAsDataURL(blob)
+      })
+      pdf.addImage(logo, 'PNG', margin, y, 25, 18)
+      y += 23
+    }
+  } catch {
+    // O relatório continua sendo gerado mesmo se a logo não carregar.
+  }
+
+  pdf.setFontSize(18)
+  pdf.setFont('helvetica', 'bold')
+  pdf.text('VM ANDAIMES', margin, y)
+  y += 8
+
+  pdf.setFontSize(13)
+  pdf.text(
+    pdfType === 'montados'
+      ? 'Relatório de Andaimes Montados'
+      : pdfType === 'desmontados'
+        ? 'Relatório de Andaimes Desmontados'
+        : 'Relatório Geral de Andaimes',
+    margin,
+    y,
+  )
+  y += 7
+
+  pdf.setFont('helvetica', 'normal')
+  pdf.setFontSize(9)
+  pdf.text(`Emitido em: ${new Date().toLocaleString('pt-BR')}`, margin, y)
+  y += 8
+
+  const groups =
+    pdfType === 'todos'
+      ? [
+          { title: 'ANDAIMES MONTADOS / AGUARDANDO RETIRADA', items: selected.filter((item) => item.status !== 'retirado') },
+          { title: 'ANDAIMES DESMONTADOS / RETIRADOS', items: selected.filter((item) => item.status === 'retirado') },
+        ]
+      : [
+          {
+            title: pdfType === 'montados' ? 'ANDAIMES MONTADOS / AGUARDANDO RETIRADA' : 'ANDAIMES DESMONTADOS / RETIRADOS',
+            items: selected,
+          },
+        ]
+
+  for (const group of groups) {
+    if (group.items.length === 0) continue
+
+    addPageIfNeeded(14)
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(11)
+    pdf.text(group.title, margin, y)
+    y += 8
+
+    for (const item of group.items) {
+      addPageIfNeeded(25)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setFontSize(10)
+      pdf.text(`Andaime ${item.code}`, margin, y)
+      y += 6
+
+      pdf.setFont('helvetica', 'normal')
+      pdf.setFontSize(9)
+      write('Cliente', item.client)
+      write('Obra', item.work_site)
+      write('Solicitante', item.requester)
+      write('Descrição', item.description)
+      write('Data da montagem', item.mounted_at)
+      write('Dias montado', daysMounted(item.mounted_at, item.removed_at))
+      write('Responsável pela montagem', item.responsible)
+      write('Status', statusLabel[item.status])
+      write('Observações', item.notes)
+      write('Data da retirada', item.removed_at)
+      write('Responsável pela retirada', item.removal_responsible)
+      write('Observações da retirada', item.removal_notes)
+
+      const itemInspections = inspections.filter((inspection) => inspection.scaffold_id === item.id)
+
+      addPageIfNeeded(8)
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('Inspeções', margin, y)
+      y += 5
+      pdf.setFont('helvetica', 'normal')
+
+      if (itemInspections.length === 0) {
+        write('Histórico', 'Nenhuma inspeção registrada')
+      } else {
+        for (const inspection of itemInspections) {
+          write('Data da inspeção', inspection.inspected_at)
+          write('Inspetor', inspection.inspector)
+          write('Condição', conditionLabel[inspection.condition])
+          write('Observações da inspeção', inspection.notes)
+        }
+      }
+
+      y += 4
+      addPageIfNeeded(5)
+      pdf.setDrawColor(210, 210, 210)
+      pdf.line(margin, y, pageWidth - margin, y)
+      y += 6
+    }
+  }
+
+  const totalPages = pdf.getNumberOfPages()
+  for (let page = 1; page <= totalPages; page++) {
+    pdf.setPage(page)
+    pdf.setFontSize(8)
+    pdf.setFont('helvetica', 'normal')
+    pdf.text(`Página ${page} de ${totalPages}`, pageWidth - margin, pageHeight - 8, { align: 'right' })
+  }
+
+  pdf.save(`VM-Andaimes-Relatorio-${pdfType}-${today()}.pdf`)
+}
   function exportCsv() {
     const headers = [
       'Código', 'Cliente', 'Obra', 'Solicitante', 'Descrição',
@@ -790,9 +944,26 @@ export default function App() {
                 <h2>Todos os andaimes</h2>
                 <p>Pesquise, atualize e acompanhe cada montagem.</p>
               </div>
-              <button className="btn secondary" onClick={exportCsv}>
-                <ArrowDownToLine size={17}/> Exportar CSV
-              </button>
+              
+<div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+  <select
+    aria-label="Tipo de relatório PDF"
+    value={pdfType}
+    onChange={e => setPdfType(e.target.value as 'montados' | 'desmontados' | 'todos')}
+  >
+    <option value="todos">PDF: todos os andaimes</option>
+    <option value="montados">PDF: montados</option>
+    <option value="desmontados">PDF: desmontados</option>
+  </select>
+
+  <button className="btn primary" onClick={() => void exportPdf()}>
+    <FileText size={17}/> Baixar PDF
+  </button>
+
+  <button className="btn secondary" onClick={exportCsv}>
+    <ArrowDownToLine size={17}/> Exportar CSV
+  </button>
+</div>
             </div>
 
             <div className="filters">
