@@ -51,7 +51,11 @@ const emptyWork = {
   notes: '',
 }
 
-export default function ClientsWorks() {
+export default function ClientsWorks({
+  readOnly = false,
+}: {
+  readOnly?: boolean
+}) {
   const [section, setSection] = useState<Section>('clientes')
   const [clients, setClients] = useState<Client[]>([])
   const [works, setWorks] = useState<Work[]>([])
@@ -66,40 +70,63 @@ export default function ClientsWorks() {
 
   async function loadData() {
     if (!supabase) return
+
     setLoading(true)
 
-    const [clientResult, workResult] = await Promise.all([
-      supabase.from('clients').select('*').order('company_name'),
-      supabase.from('works').select('*').order('name'),
-    ])
+    try {
+      const [clientResult, workResult] = await Promise.all([
+        supabase.from('clients').select('*').order('company_name'),
+        supabase.from('works').select('*').order('name'),
+      ])
 
-    if (clientResult.error) {
-      setNotice('Erro ao carregar clientes: ' + clientResult.error.message)
-    } else {
-      setClients((clientResult.data || []) as Client[])
+      if (clientResult.error) {
+        setNotice('Erro ao carregar clientes: ' + clientResult.error.message)
+      } else {
+        setClients((clientResult.data || []) as Client[])
+      }
+
+      if (workResult.error) {
+        setNotice('Erro ao carregar obras: ' + workResult.error.message)
+      } else {
+        setWorks((workResult.data || []) as Work[])
+      }
+    } finally {
+      setLoading(false)
     }
-
-    if (workResult.error) {
-      setNotice('Erro ao carregar obras: ' + workResult.error.message)
-    } else {
-      setWorks((workResult.data || []) as Work[])
-    }
-
-    setLoading(false)
   }
 
   useEffect(() => {
     void loadData()
   }, [])
 
+  useEffect(() => {
+    if (readOnly) {
+      setShowForm(false)
+      setEditingClient(null)
+      setEditingWork(null)
+    }
+  }, [readOnly])
+
   function newClient() {
+    if (readOnly) {
+      setNotice('Seu perfil permite apenas consulta.')
+      return
+    }
+
     setEditingClient(null)
+    setEditingWork(null)
     setClientForm({ ...emptyClient })
     setShowForm(true)
   }
 
   function editClient(client: Client) {
+    if (readOnly) {
+      setNotice('Seu perfil permite apenas consulta.')
+      return
+    }
+
     setEditingClient(client.id)
+    setEditingWork(null)
     setClientForm({
       company_name: client.company_name,
       contact_name: client.contact_name || '',
@@ -114,13 +141,25 @@ export default function ClientsWorks() {
   }
 
   function newWork() {
+    if (readOnly) {
+      setNotice('Seu perfil permite apenas consulta.')
+      return
+    }
+
     setEditingWork(null)
+    setEditingClient(null)
     setWorkForm({ ...emptyWork })
     setShowForm(true)
   }
 
   function editWork(work: Work) {
+    if (readOnly) {
+      setNotice('Seu perfil permite apenas consulta.')
+      return
+    }
+
     setEditingWork(work.id)
+    setEditingClient(null)
     setWorkForm({
       name: work.name,
       client_id: work.client_id || '',
@@ -136,6 +175,12 @@ export default function ClientsWorks() {
 
   async function saveClient(event: FormEvent) {
     event.preventDefault()
+
+    if (readOnly) {
+      setNotice('Seu perfil permite apenas consulta.')
+      return
+    }
+
     if (!supabase) return
 
     const payload = {
@@ -166,6 +211,12 @@ export default function ClientsWorks() {
 
   async function saveWork(event: FormEvent) {
     event.preventDefault()
+
+    if (readOnly) {
+      setNotice('Seu perfil permite apenas consulta.')
+      return
+    }
+
     if (!supabase) return
 
     const payload = {
@@ -195,11 +246,19 @@ export default function ClientsWorks() {
   }
 
   async function deleteClient(client: Client) {
+    if (readOnly) {
+      setNotice('Seu perfil permite apenas consulta.')
+      return
+    }
+
     if (!supabase || !window.confirm(
       `Excluir o cliente "${client.company_name}"? Clientes vinculados a obras ou andaimes não podem ser excluídos.`
     )) return
 
-    const { error } = await supabase.from('clients').delete().eq('id', client.id)
+    const { error } = await supabase
+      .from('clients')
+      .delete()
+      .eq('id', client.id)
 
     if (error) {
       setNotice('Não foi possível excluir. Verifique se há obras ou andaimes vinculados. ' + error.message)
@@ -210,11 +269,19 @@ export default function ClientsWorks() {
   }
 
   async function deleteWork(work: Work) {
+    if (readOnly) {
+      setNotice('Seu perfil permite apenas consulta.')
+      return
+    }
+
     if (!supabase || !window.confirm(
       `Excluir a obra "${work.name}"? Obras vinculadas a andaimes ou movimentações não podem ser excluídas.`
     )) return
 
-    const { error } = await supabase.from('works').delete().eq('id', work.id)
+    const { error } = await supabase
+      .from('works')
+      .delete()
+      .eq('id', work.id)
 
     if (error) {
       setNotice('Não foi possível excluir. Verifique se há registros vinculados. ' + error.message)
@@ -251,12 +318,26 @@ export default function ClientsWorks() {
       <div className="panel-heading">
         <div>
           <h2>Cadastro de clientes e obras</h2>
-          <p>Gerencie os clientes e os locais de trabalho da VM Andaimes.</p>
+          <p>
+            {readOnly
+              ? 'Consulte os clientes e os locais de trabalho da VM Andaimes.'
+              : 'Gerencie os clientes e os locais de trabalho da VM Andaimes.'}
+          </p>
         </div>
-        <button className="btn secondary" type="button" onClick={() => void loadData()}>
+        <button
+          className="btn secondary"
+          type="button"
+          onClick={() => void loadData()}
+        >
           <RefreshCw size={17} /> Atualizar
         </button>
       </div>
+
+      {readOnly && (
+        <p className="muted" role="status">
+          Modo somente visualização: você pode consultar os registros, mas não alterá-los.
+        </p>
+      )}
 
       <div className="module-tabs">
         <button
@@ -297,15 +378,23 @@ export default function ClientsWorks() {
               aria-label="Pesquisar"
               value={search}
               onChange={event => setSearch(event.target.value)}
-              placeholder={section === 'clientes' ? 'Buscar cliente, contato ou telefone...' : 'Buscar obra, cliente ou responsável...'}
+              placeholder={
+                section === 'clientes'
+                  ? 'Buscar cliente, contato ou telefone...'
+                  : 'Buscar obra, cliente ou responsável...'
+              }
             />
-            <button
-              type="button"
-              className="btn primary"
-              onClick={section === 'clientes' ? newClient : newWork}
-            >
-              <Plus size={17} /> {section === 'clientes' ? 'Novo cliente' : 'Nova obra'}
-            </button>
+
+            {!readOnly && (
+              <button
+                type="button"
+                className="btn primary"
+                onClick={section === 'clientes' ? newClient : newWork}
+              >
+                <Plus size={17} />
+                {section === 'clientes' ? 'Novo cliente' : 'Nova obra'}
+              </button>
+            )}
           </div>
 
           {loading && <p className="muted">Carregando dados...</p>}
@@ -326,17 +415,31 @@ export default function ClientsWorks() {
                       {client.active ? 'Ativo' : 'Inativo'}
                     </span>
                   </div>
-                  <div className="module-record-actions">
-                    <button className="btn secondary" type="button" onClick={() => editClient(client)}>
-                      <Pencil size={15} /> Editar
-                    </button>
-                    <button className="btn secondary" type="button" onClick={() => void deleteClient(client)}>
-                      <Trash2 size={15} /> Excluir
-                    </button>
-                  </div>
+
+                  {!readOnly && (
+                    <div className="module-record-actions">
+                      <button
+                        className="btn secondary"
+                        type="button"
+                        onClick={() => editClient(client)}
+                      >
+                        <Pencil size={15} /> Editar
+                      </button>
+                      <button
+                        className="btn secondary"
+                        type="button"
+                        onClick={() => void deleteClient(client)}
+                      >
+                        <Trash2 size={15} /> Excluir
+                      </button>
+                    </div>
+                  )}
                 </article>
               ))}
-              {!filteredClients.length && <p className="muted">Nenhum cliente encontrado.</p>}
+
+              {!filteredClients.length && (
+                <p className="muted">Nenhum cliente encontrado.</p>
+              )}
             </div>
           )}
 
@@ -346,7 +449,9 @@ export default function ClientsWorks() {
                 <article className="module-record" key={work.id}>
                   <div className="module-record-main">
                     <h3>{work.name}</h3>
-                    <p>Cliente: {clients.find(client => client.id === work.client_id)?.company_name || 'Não vinculado'}</p>
+                    <p>
+                      Cliente: {clients.find(client => client.id === work.client_id)?.company_name || 'Não vinculado'}
+                    </p>
                     <small>
                       {[work.address, work.responsible].filter(Boolean).join(' · ') || 'Endereço e responsável não informados'}
                     </small>
@@ -358,66 +463,132 @@ export default function ClientsWorks() {
                         concluida: 'Concluída',
                       }[work.status]}
                     </p>
-                    {work.start_date && <small>Início: {new Date(`${work.start_date}T00:00:00`).toLocaleDateString('pt-BR')}</small>}
-                    {work.end_date && <small> · Fim: {new Date(`${work.end_date}T00:00:00`).toLocaleDateString('pt-BR')}</small>}
+                    {work.start_date && (
+                      <small>
+                        Início: {new Date(`${work.start_date}T00:00:00`).toLocaleDateString('pt-BR')}
+                      </small>
+                    )}
+                    {work.end_date && (
+                      <small>
+                        {' '}· Fim: {new Date(`${work.end_date}T00:00:00`).toLocaleDateString('pt-BR')}
+                      </small>
+                    )}
+                    {work.notes && <p>Observações: {work.notes}</p>}
                   </div>
-                  <div className="module-record-actions">
-                    <button className="btn secondary" type="button" onClick={() => editWork(work)}>
-                      <Pencil size={15} /> Editar
-                    </button>
-                    <button className="btn secondary" type="button" onClick={() => void deleteWork(work)}>
-                      <Trash2 size={15} /> Excluir
-                    </button>
-                  </div>
+
+                  {!readOnly && (
+                    <div className="module-record-actions">
+                      <button
+                        className="btn secondary"
+                        type="button"
+                        onClick={() => editWork(work)}
+                      >
+                        <Pencil size={15} /> Editar
+                      </button>
+                      <button
+                        className="btn secondary"
+                        type="button"
+                        onClick={() => void deleteWork(work)}
+                      >
+                        <Trash2 size={15} /> Excluir
+                      </button>
+                    </div>
+                  )}
                 </article>
               ))}
-              {!filteredWorks.length && <p className="muted">Nenhuma obra encontrada.</p>}
+
+              {!filteredWorks.length && (
+                <p className="muted">Nenhuma obra encontrada.</p>
+              )}
             </div>
           )}
         </>
       )}
 
-      {showForm && section === 'clientes' && (
+      {!readOnly && showForm && section === 'clientes' && (
         <form className="form-grid" onSubmit={saveClient}>
           <label className="wide">Nome da empresa *
-            <input required value={clientForm.company_name} onChange={event => setClientForm({ ...clientForm, company_name: event.target.value })} />
+            <input
+              required
+              value={clientForm.company_name}
+              onChange={event => setClientForm({ ...clientForm, company_name: event.target.value })}
+            />
           </label>
           <label>Nome do contato
-            <input value={clientForm.contact_name} onChange={event => setClientForm({ ...clientForm, contact_name: event.target.value })} />
+            <input
+              value={clientForm.contact_name}
+              onChange={event => setClientForm({ ...clientForm, contact_name: event.target.value })}
+            />
           </label>
           <label>Telefone
-            <input value={clientForm.phone} onChange={event => setClientForm({ ...clientForm, phone: event.target.value })} />
+            <input
+              value={clientForm.phone}
+              onChange={event => setClientForm({ ...clientForm, phone: event.target.value })}
+            />
           </label>
           <label>E-mail
-            <input type="email" value={clientForm.email} onChange={event => setClientForm({ ...clientForm, email: event.target.value })} />
+            <input
+              type="email"
+              value={clientForm.email}
+              onChange={event => setClientForm({ ...clientForm, email: event.target.value })}
+            />
           </label>
           <label>CNPJ / documento
-            <input value={clientForm.document_number} onChange={event => setClientForm({ ...clientForm, document_number: event.target.value })} />
+            <input
+              value={clientForm.document_number}
+              onChange={event => setClientForm({ ...clientForm, document_number: event.target.value })}
+            />
           </label>
           <label className="wide">Endereço
-            <input value={clientForm.address} onChange={event => setClientForm({ ...clientForm, address: event.target.value })} />
+            <input
+              value={clientForm.address}
+              onChange={event => setClientForm({ ...clientForm, address: event.target.value })}
+            />
           </label>
           <label className="wide">Observações
-            <textarea rows={3} value={clientForm.notes} onChange={event => setClientForm({ ...clientForm, notes: event.target.value })} />
+            <textarea
+              rows={3}
+              value={clientForm.notes}
+              onChange={event => setClientForm({ ...clientForm, notes: event.target.value })}
+            />
           </label>
           <label className="wide">
-            <input type="checkbox" checked={clientForm.active} onChange={event => setClientForm({ ...clientForm, active: event.target.checked })} />
+            <input
+              type="checkbox"
+              checked={clientForm.active}
+              onChange={event => setClientForm({ ...clientForm, active: event.target.checked })}
+            />
             Cliente ativo
           </label>
           <div className="modal-actions wide">
-            <button type="button" className="btn secondary" onClick={() => setShowForm(false)}>Cancelar</button>
-            <button className="btn primary" type="submit"><Check size={17} /> Salvar cliente</button>
+            <button
+              type="button"
+              className="btn secondary"
+              onClick={() => setShowForm(false)}
+            >
+              Cancelar
+            </button>
+            <button className="btn primary" type="submit">
+              <Check size={17} /> Salvar cliente
+            </button>
           </div>
         </form>
       )}
 
-      {showForm && section === 'obras' && (
+      {!readOnly && showForm && section === 'obras' && (
         <form className="form-grid" onSubmit={saveWork}>
           <label className="wide">Nome da obra *
-            <input required value={workForm.name} onChange={event => setWorkForm({ ...workForm, name: event.target.value })} />
+            <input
+              required
+              value={workForm.name}
+              onChange={event => setWorkForm({ ...workForm, name: event.target.value })}
+            />
           </label>
           <label className="wide">Cliente
-            <select value={workForm.client_id} onChange={event => setWorkForm({ ...workForm, client_id: event.target.value })}>
+            <select
+              value={workForm.client_id}
+              onChange={event => setWorkForm({ ...workForm, client_id: event.target.value })}
+            >
               <option value="">Selecione um cliente (opcional)</option>
               {clients.filter(client => client.active).map(client => (
                 <option key={client.id} value={client.id}>{client.company_name}</option>
@@ -425,13 +596,22 @@ export default function ClientsWorks() {
             </select>
           </label>
           <label className="wide">Endereço da obra
-            <input value={workForm.address} onChange={event => setWorkForm({ ...workForm, address: event.target.value })} />
+            <input
+              value={workForm.address}
+              onChange={event => setWorkForm({ ...workForm, address: event.target.value })}
+            />
           </label>
           <label>Responsável
-            <input value={workForm.responsible} onChange={event => setWorkForm({ ...workForm, responsible: event.target.value })} />
+            <input
+              value={workForm.responsible}
+              onChange={event => setWorkForm({ ...workForm, responsible: event.target.value })}
+            />
           </label>
           <label>Status
-            <select value={workForm.status} onChange={event => setWorkForm({ ...workForm, status: event.target.value as Work['status'] })}>
+            <select
+              value={workForm.status}
+              onChange={event => setWorkForm({ ...workForm, status: event.target.value as Work['status'] })}
+            >
               <option value="planejada">Planejada</option>
               <option value="ativa">Ativa</option>
               <option value="pausada">Pausada</option>
@@ -439,18 +619,40 @@ export default function ClientsWorks() {
             </select>
           </label>
           <label>Data de início
-            <input type="date" value={workForm.start_date} onChange={event => setWorkForm({ ...workForm, start_date: event.target.value })} />
+            <input
+              type="date"
+              value={workForm.start_date}
+              onChange={event => setWorkForm({ ...workForm, start_date: event.target.value })}
+            />
           </label>
           <label>Data de término
-            <input type="date" value={workForm.end_date} onChange={event => setWorkForm({ ...workForm, end_date: event.target.value })} />
+            <input
+              type="date"
+              value={workForm.end_date}
+              onChange={event => setWorkForm({ ...workForm, end_date: event.target.value })}
+            />
           </label>
           <label className="wide">Observações
-            <textarea rows={3} value={workForm.notes} onChange={event => setWorkForm({ ...workForm, notes: event.target.value })} />
+            <textarea
+              rows={3}
+              value={workForm.notes}
+              onChange={event => setWorkForm({ ...workForm, notes: event.target.value })}
+            />
           </label>
-          {selectedClient && <p className="muted wide">Cliente selecionado: {selectedClient.company_name}</p>}
+          {selectedClient && (
+            <p className="muted wide">Cliente selecionado: {selectedClient.company_name}</p>
+          )}
           <div className="modal-actions wide">
-            <button type="button" className="btn secondary" onClick={() => setShowForm(false)}>Cancelar</button>
-            <button className="btn primary" type="submit"><Check size={17} /> Salvar obra</button>
+            <button
+              type="button"
+              className="btn secondary"
+              onClick={() => setShowForm(false)}
+            >
+              Cancelar
+            </button>
+            <button className="btn primary" type="submit">
+              <Check size={17} /> Salvar obra
+            </button>
           </div>
         </form>
       )}
