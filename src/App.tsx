@@ -14,9 +14,9 @@ import ClientsWorks from './ClientsWorks'
 type Tab = 'painel' | 'montagens' | 'inspecoes' | 'clientes-obras'
 type Role = 'admin' | 'viewer' | null
 
-const emptyForm = {
-  client: '',
-  work_site: '',
+  const emptyForm = {
+  code: '',
+  client: '',  work_site: '',
   requester: '',
   description: '',
   mounted_at: today(),
@@ -307,6 +307,7 @@ export default function App() {
 
     setEditing(item)
     setForm({
+      code: item.code,
       client: item.client,
       work_site: item.work_site,
       requester: item.requester,
@@ -883,8 +884,17 @@ export default function App() {
           onClose={() => setShowForm(false)}
         >
           <form className="form-grid" onSubmit={saveScaffold}>
-            <label>Cliente
-              <input
+  <label>Identificação / TAG
+    <input
+      required
+      value={form.code}
+      onChange={e => setForm({ ...form, code: e.target.value })}
+      placeholder="Ex.: TAG-001"
+      maxLength={50}
+    />
+  </label>
+
+  <label>Cliente              <input
                 required
                 value={form.client}
                 onChange={e => setForm({ ...form, client: e.target.value })}
