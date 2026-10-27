@@ -453,3 +453,44 @@
     flex: 1 1 0;
   }
 }
+/* CORRECAO DO MENU PRINCIPAL NO CELULAR */
+@media (max-width: 720px) {
+  .app-shell .sidebar {
+    display: flex !important;
+    flex-direction: column !important;
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    padding: 12px 14px !important;
+    overflow: visible !important;
+  }
+
+  .app-shell .sidebar .side-label {
+    display: block !important;
+  }
+
+  .app-shell .sidebar > .nav-item {
+    display: flex !important;
+    visibility: visible !important;
+    width: 100% !important;
+    min-height: 44px;
+    align-items: center;
+    margin-bottom: 5px !important;
+  }
+
+  .app-shell .sidebar .sidebar-bottom {
+    display: block !important;
+    visibility: visible !important;
+    margin-top: 12px !important;
+  }
+
+  .app-shell .sidebar .sidebar-bottom .nav-item {
+    display: flex !important;
+    visibility: visible !important;
+  }
+
+  .app-shell .main-area {
+    margin-left: 0 !important;
+    width: 100%;
+  }
+}
