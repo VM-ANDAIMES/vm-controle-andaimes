@@ -342,7 +342,7 @@ export default function ClientsWorks({
       <div className="module-tabs">
         <button
           type="button"
-          className={`btn ${section === 'clientes' ? 'primary' : 'secondary'}`}
+          className={`btn module-tab-clientes ${section === 'clientes' ? 'primary' : 'secondary'}`}
           onClick={() => {
             setSection('clientes')
             setSearch('')
@@ -353,7 +353,7 @@ export default function ClientsWorks({
         </button>
         <button
           type="button"
-          className={`btn ${section === 'obras' ? 'primary' : 'secondary'}`}
+          className={`btn module-tab-obras ${section === 'obras' ? 'primary' : 'secondary'}`}
           onClick={() => {
             setSection('obras')
             setSearch('')

@@ -318,3 +318,18 @@
   object-position: center !important;
   transform: none !important;
 }
+@media (max-width: 720px) {
+  .module-tabs .module-tab-clientes,
+  .module-tabs .module-tab-obras {
+    padding: 8px 10px;
+    font-size: 12px;
+    min-height: 34px;
+    gap: 5px;
+  }
+
+  .module-tabs .module-tab-clientes svg,
+  .module-tabs .module-tab-obras svg {
+    width: 14px;
+    height: 14px;
+  }
+}
