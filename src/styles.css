@@ -160,3 +160,40 @@
   }
 }
 
+/* CORREÇÃO EXCLUSIVA DA LOGO NA TELA DE LOGIN */
+.login-page .login-card .brand-mark.brand-logo {
+  position: relative !important;
+  display: grid !important;
+  place-items: center !important;
+  box-sizing: border-box !important;
+  width: 64px !important;
+  height: 64px !important;
+  min-width: 64px !important;
+  min-height: 64px !important;
+  max-width: 64px !important;
+  max-height: 64px !important;
+  padding: 5px !important;
+  margin: 0 auto 16px 0 !important;
+  overflow: hidden !important;
+  background: #ffffff !important;
+  border-radius: 12px !important;
+  transform: none !important;
+  flex: 0 0 64px !important;
+}
+
+.login-page .login-card .brand-mark.brand-logo img {
+  position: static !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  transform: none !important;
+}
+
