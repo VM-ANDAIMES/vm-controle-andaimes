@@ -610,7 +610,7 @@ export default function App() {
     return (
       <div className="login-page">
         <div className="login-card">
-          <div className="brand-mark brand-logo">
+          <div className="brand-mark brand-logo permission-logo">
             <img src="/logo-vm.png" alt="Logo VM Andaimes" />
           </div>
           <p className="eyebrow">VM ANDAIMES</p>
