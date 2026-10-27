@@ -159,137 +159,27 @@
     margin: 0 0 0 8px !important;
   }
 }
-
-/* CORREÇÃO EXCLUSIVA DA LOGO NA TELA DE LOGIN */
-.login-page .login-card .brand-mark.brand-logo {
-  position: relative !important;
+/* VM ANDAIMES — AJUSTE FINAL DA LOGO DO LOGIN */
+.login-page-modern .login-card-modern .login-brand .login-logo {
+  box-sizing: border-box !important;
   display: grid !important;
   place-items: center !important;
-  box-sizing: border-box !important;
-  width: 64px !important;
-  height: 64px !important;
-  min-width: 64px !important;
-  min-height: 64px !important;
-  max-width: 64px !important;
-  max-height: 64px !important;
+  width: 110px !important;
+  height: 90px !important;
+  min-width: 110px !important;
+  min-height: 90px !important;
+  max-width: 110px !important;
+  max-height: 90px !important;
   padding: 5px !important;
-  margin: 0 auto 16px 0 !important;
+  margin: 0 auto 14px !important;
   overflow: hidden !important;
-  background: #ffffff !important;
+  background: #fff !important;
+  border: 1px solid #eee !important;
   border-radius: 12px !important;
-  transform: none !important;
-  flex: 0 0 64px !important;
-}
-
-.login-page .login-card .brand-mark.brand-logo img {
-  position: static !important;
-  display: block !important;
-  width: 100% !important;
-  height: 100% !important;
-  min-width: 0 !important;
-  min-height: 0 !important;
-  max-width: 100% !important;
-  max-height: 100% !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  object-fit: contain !important;
-  object-position: center !important;
-  transform: none !important;
-}
-
-/* AJUSTE FINAL - LOGO DA TELA DE LOGIN */
-.login-page .login-card > .brand-mark.brand-logo {
-  all: unset !important;
-  box-sizing: border-box !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  position: relative !important;
-  width: 110px !important;
-  height: 110px !important;
-  min-width: 110px !important;
-  min-height: 110px !important;
-  max-width: 110px !important;
-  max-height: 110px !important;
-  margin: 0 0 22px 0 !important;
-  padding: 5px !important;
-  overflow: hidden !important;
-  flex: 0 0 110px !important;
-  background: #ffffff !important;
-  border: 1px solid #eeeeee !important;
-  border-radius: 14px !important;
-  transform: none !important;
-}
-
-.login-page .login-card > .brand-mark.brand-logo img {
-  all: unset !important;
-  box-sizing: border-box !important;
-  display: block !important;
-  width: 100% !important;
-  height: 100% !important;
-  min-width: 0 !important;
-  min-height: 0 !important;
-  max-width: 100% !important;
-  max-height: 100% !important;
-  object-fit: contain !important;
-  object-position: center !important;
-  flex: 0 0 auto !important;
-}
-
-/* CORREÇÃO DEFINITIVA DA LOGO DO LOGIN */
-.login-page .login-card > .brand-mark.brand-logo {
-  all: unset !important;
-  position: relative !important;
-  display: block !important;
-  box-sizing: border-box !important;
-  width: 110px !important;
-  height: 110px !important;
-  min-width: 110px !important;
-  min-height: 110px !important;
-  max-width: 110px !important;
-  max-height: 110px !important;
-  margin: 0 0 22px 0 !important;
-  padding: 5px !important;
-  overflow: hidden !important;
-  background: #ffffff !important;
-  border: 1px solid #eeeeee !important;
-  border-radius: 14px !important;
   flex: 0 0 110px !important;
 }
 
-.login-page .login-card > .brand-mark.brand-logo img {
-  all: unset !important;
-  position: absolute !important;
-  inset: 5px !important;
-  display: block !important;
-  box-sizing: border-box !important;
-  width: calc(100% - 10px) !important;
-  height: calc(100% - 10px) !important;
-  min-width: 0 !important;
-  min-height: 0 !important;
-  max-width: calc(100% - 10px) !important;
-  max-height: calc(100% - 10px) !important;
-  object-fit: contain !important;
-  object-position: center !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  transform: none !important;
-}
-
-/* Correção da logo na tela de login da VM Andaimes */
-.login-card-modern .login-logo {
-  width: 72px !important;
-  height: 72px !important;
-  min-width: 72px !important;
-  min-height: 72px !important;
-  flex: 0 0 72px !important;
-  padding: 5px !important;
-  margin: 0 auto 12px !important;
-  overflow: hidden !important;
-  box-sizing: border-box !important;
-}
-
-.login-card-modern .login-logo img {
+.login-page-modern .login-card-modern .login-brand .login-logo img {
   display: block !important;
   width: 100% !important;
   height: 100% !important;
@@ -297,20 +187,16 @@
   max-height: 100% !important;
   object-fit: contain !important;
   object-position: center !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  transform: none !important;
 }
 
 @media (max-width: 480px) {
-  .login-card-modern .login-logo {
-    width: 64px !important;
-    height: 64px !important;
-    min-width: 64px !important;
-    min-height: 64px !important;
-    flex-basis: 64px !important;
+  .login-page-modern .login-card-modern .login-brand .login-logo {
+    width: 90px !important;
+    height: 75px !important;
+    min-width: 90px !important;
+    min-height: 75px !important;
+    max-width: 90px !important;
+    max-height: 75px !important;
+    flex-basis: 90px !important;
   }
 }
-
-
-
