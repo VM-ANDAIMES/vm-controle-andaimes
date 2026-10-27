@@ -333,3 +333,123 @@
     height: 14px;
   }
 }
+/* VM ANDAIMES - ORGANIZACAO MOBILE CLIENTES E OBRAS */
+@media (max-width: 720px) {
+  .module-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 14px 0;
+  }
+
+  .module-tabs .module-tab-clientes,
+  .module-tabs .module-tab-obras {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
+    padding: 9px 7px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .module-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .module-toolbar input {
+    width: 100%;
+    min-width: 0;
+    height: 42px;
+    padding: 10px;
+    font-size: 13px;
+  }
+
+  .module-toolbar .btn {
+    min-height: 42px;
+    padding: 9px 11px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .module-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .module-record {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .module-record-main {
+    min-width: 0;
+  }
+
+  .module-record-main h3 {
+    margin: 0 0 7px;
+    font-size: 16px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+
+  .module-record-main p {
+    margin: 5px 0;
+    font-size: 13px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  .module-record-main small {
+    display: block;
+    margin: 7px 0;
+    font-size: 11px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  .module-record-main .pill {
+    display: inline-flex;
+    margin-top: 5px;
+  }
+
+  .module-record-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-top: 10px;
+    border-top: 1px solid #eeeeee;
+  }
+
+  .module-record-actions .btn {
+    flex: 1 1 100px;
+    justify-content: center;
+    min-height: 38px;
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 420px) {
+  .module-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .module-toolbar .btn {
+    justify-self: start;
+  }
+
+  .module-record {
+    padding: 13px;
+  }
+
+  .module-record-actions .btn {
+    flex: 1 1 0;
+  }
+}
