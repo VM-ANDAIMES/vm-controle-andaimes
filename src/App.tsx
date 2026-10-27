@@ -530,8 +530,6 @@ export default function App() {
       </div>
     )
   }
-
-  
   if (!session) {
     return (
       <main className="login-page login-page-modern">
@@ -1286,8 +1284,4 @@ function SetupScreen() {
       </div>
     </div>
   )
-}
-// Aguarda a verificação do perfil sem exibir uma tela intermediária.
-if (role === null) {
-  return null
 }
