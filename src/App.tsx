@@ -540,12 +540,11 @@ export default function App() {
 
         <section className="login-card login-card-modern">
           <div className="login-brand">
-            <div className="brand-mark brand-logo login-logo">
-              <img src="/logo-vm.png" alt="Logo VM Andaimes" />
-            </div>
-            <p className="eyebrow">VM ANDAIMES · DESDE 2008</p>
-          </div>
-
+  <div className="brand-mark brand-logo login-logo">
+    <img src="/vm-logo.png" alt="Logo VM Andaimes" />
+  </div>
+  <p className="eyebrow">VM ANDAIMES · DESDE 2008</p>
+</div>
           <header className="login-heading">
             <h1>Controle de <span>Andaimes</span></h1>
             <p className="muted">
