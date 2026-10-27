@@ -531,61 +531,78 @@ export default function App() {
     )
   }
 
+  
   if (!session) {
     return (
-      <div className="login-page">
-        <div className="login-card">
-          <div className="brand-mark brand-logo">
-            <img src="/logo-vm.png" alt="Logo VM Andaimes" />
+      <main className="login-page login-page-modern">
+        <div className="login-decoration login-decoration-one" aria-hidden="true" />
+        <div className="login-decoration login-decoration-two" aria-hidden="true" />
+
+        <section className="login-card login-card-modern">
+          <div className="login-brand">
+            <div className="brand-mark brand-logo login-logo">
+              <img src="/logo-vm.png" alt="Logo VM Andaimes" />
+            </div>
+            <p className="eyebrow">VM ANDAIMES · DESDE 2008</p>
           </div>
-          <p className="eyebrow">VM ANDAIMES</p>
-          <h1>Controle de <span>Andaimes</span></h1>
-          <p className="muted">
-            Entre para acompanhar montagens, inspeções e retiradas.
-          </p>
-          <form onSubmit={login} className="stack">
-            <label>E-mail
+
+          <header className="login-heading">
+            <h1>Controle de <span>Andaimes</span></h1>
+            <p className="muted">
+              Acesse o sistema para acompanhar montagens, inspeções e retiradas.
+            </p>
+          </header>
+
+          <form onSubmit={login} className="stack login-form">
+            <label>
+              E-mail
               <input
                 type="email"
                 required
+                autoComplete="username"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="seu@email.com"
               />
             </label>
-            <label>Senha
+
+            <label>
+              Senha
               <input
                 type="password"
                 required
+                autoComplete="current-password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                placeholder="Sua senha"
+                placeholder="Digite sua senha"
               />
             </label>
+
             <button
+              className="login-forgot"
               type="button"
-              onClick={recoverPassword}
-              style={{
-                background: 'none',
-                border: 0,
-                color: '#f57c00',
-                cursor: 'pointer',
-                padding: 0,
-                textAlign: 'left'
-              }}
+              onClick={(e) => void recoverPassword(e as unknown as FormEvent)}
             >
               Esqueci minha senha
             </button>
-            {loginError && <p className="error">{loginError}</p>}
-            <button className="btn primary full" type="submit">
+
+            {loginError && (
+              <p className="error login-error" role="alert">
+                {loginError}
+              </p>
+            )}
+
+            <button className="btn primary full login-submit" type="submit">
               Entrar no sistema
             </button>
           </form>
-          <p className="login-foot">
-            <ShieldCheck size={15}/> Acesso restrito a usuários autorizados
-          </p>
-        </div>
-      </div>
+
+          <footer className="login-foot login-foot-modern">
+            <ShieldCheck size={16} />
+            <span>Acesso restrito a usuários autorizados</span>
+          </footer>
+        </section>
+      </main>
     )
   }
 
