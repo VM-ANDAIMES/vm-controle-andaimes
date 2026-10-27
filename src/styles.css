@@ -197,3 +197,42 @@
   transform: none !important;
 }
 
+/* AJUSTE FINAL - LOGO DA TELA DE LOGIN */
+.login-page .login-card > .brand-mark.brand-logo {
+  all: unset !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  width: 110px !important;
+  height: 110px !important;
+  min-width: 110px !important;
+  min-height: 110px !important;
+  max-width: 110px !important;
+  max-height: 110px !important;
+  margin: 0 0 22px 0 !important;
+  padding: 5px !important;
+  overflow: hidden !important;
+  flex: 0 0 110px !important;
+  background: #ffffff !important;
+  border: 1px solid #eeeeee !important;
+  border-radius: 14px !important;
+  transform: none !important;
+}
+
+.login-page .login-card > .brand-mark.brand-logo img {
+  all: unset !important;
+  box-sizing: border-box !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  flex: 0 0 auto !important;
+}
+
