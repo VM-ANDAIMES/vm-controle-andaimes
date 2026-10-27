@@ -200,3 +200,47 @@
     flex-basis: 90px !important;
   }
 }
+
+/* CORREÇÃO DA LOGO NA TELA DE LOGIN */
+.login-page-modern .login-card-modern .login-brand {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  width: 100% !important;
+}
+
+.login-page-modern .login-card-modern .login-brand .login-logo {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 110px !important;
+  height: 80px !important;
+  min-width: 110px !important;
+  min-height: 80px !important;
+  margin: 0 auto 14px !important;
+  padding: 5px !important;
+  background: #fff !important;
+  border: 1px solid #eee !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  flex-shrink: 0 !important;
+}
+
+.login-page-modern .login-card-modern .login-brand .login-logo img {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  object-position: center !important;
+}
+
+@media (max-width: 480px) {
+  .login-page-modern .login-card-modern .login-brand .login-logo {
+    width: 90px !important;
+    height: 70px !important;
+    min-width: 90px !important;
+    min-height: 70px !important;
+  }
+}
