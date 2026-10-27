@@ -5,8 +5,9 @@ import {
   Plus, RefreshCw, Search, ShieldCheck, Trash2, X
 } from 'lucide-react'
 import { conditionLabel, daysMounted, Inspection, isSupabaseConfigured, Scaffold, ScaffoldStatus, statusLabel, supabase, today } from './lib'
+import ClientsWorks from './ClientsWorks'
 
-type Tab = 'painel' | 'montagens' | 'inspecoes'
+type Tab = 'painel' | 'montagens' | 'inspecoes' | 'clientes-obras'
 const emptyForm = {
   client: '', work_site: '', requester: '', description: '', mounted_at: today(),
   responsible: '', notes: '', status: 'montado' as ScaffoldStatus
@@ -199,10 +200,11 @@ if (recoveringPassword) return <div className="login-page"><div className="login
       <button className={`nav-item ${tab==='painel'?'active':''}`} onClick={()=>setTab('painel')}><Activity size={18}/> Painel geral</button>
       <button className={`nav-item ${tab==='montagens'?'active':''}`} onClick={()=>setTab('montagens')}><Construction size={18}/> Montagens</button>
       <button className={`nav-item ${tab==='inspecoes'?'active':''}`} onClick={()=>setTab('inspecoes')}><ClipboardList size={18}/> Inspeções</button>
+<button className={`nav-item ${tab==='clientes-obras'?'active':''}`} onClick={()=>setTab('clientes-obras')}><Construction size={18}/> Clientes e Obras</button>
       <div className="sidebar-bottom"><div className="safe-box"><ShieldCheck size={20}/><div><strong>Segurança em primeiro lugar</strong><small>Registre inspeções e ocorrências.</small></div></div><button className="nav-item" onClick={logout}><LogOut size={18}/> Sair do sistema</button></div>
     </aside>
     <main className="main-area">
-      <header className="topbar"><div><p className="eyebrow">GESTÃO DE CAMPO</p><h1>{tab==='painel'?'Painel geral':tab==='montagens'?'Controle de montagens':'Inspeções registradas'}</h1></div><div className="top-actions"><span className="online-dot">Sistema online</span><button className="icon-btn" onClick={()=>void loadData()} title="Atualizar"><RefreshCw size={18}/></button><button className="btn primary" onClick={openNew}><Plus size={18}/> Nova montagem</button></div></header>
+      <header className="topbar"><div><p className="eyebrow">GESTÃO DE CAMPO</p><h1>{tab==='painel'?'Painel geral':tab==='montagens'?'Controle de montagens':tab==='inspecoes'?'Inspeções registradas':'Clientes e Obras'}</h1></div><div className="top-actions"><span className="online-dot">Sistema online</span><button className="icon-btn" onClick={()=>void loadData()} title="Atualizar"><RefreshCw size={18}/></button><button className="btn primary" onClick={openNew}><Plus size={18}/> Nova montagem</button></div></header>
       {notice && <div className="toast"><Check size={17}/>{notice}<button onClick={()=>setNotice('')}><X size={16}/></button></div>}
       {tab==='painel' && <>
         <section className="welcome"><div><p className="eyebrow">VISÃO GERAL</p><h2>Olá! Vamos manter tudo sob controle.</h2><p>Acompanhe o tempo de montagem e as atividades da equipe em um só lugar.</p></div><div className="welcome-icon brand-logo"><img src="/logo-vm.png" alt="Logo VM Andaimes" /></div></section>
@@ -217,6 +219,7 @@ if (recoveringPassword) return <div className="login-page"><div className="login
       </>}
       {tab==='montagens' && <section className="panel"><div className="panel-heading"><div><h2>Todos os andaimes</h2><p>Pesquise, atualize e acompanhe cada montagem.</p></div><button className="btn secondary" onClick={exportCsv}><ArrowDownToLine size={17}/> Exportar CSV</button></div><div className="filters"><div className="searchbox"><Search size={17}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar código, obra, cliente ou solicitante..."/></div><select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}><option value="todos">Todos os status</option><option value="montado">Montado</option><option value="aguardando_retirada">Aguardando retirada</option><option value="retirado">Retirado</option></select></div><ScaffoldTable items={filtered} onSelect={setSelected} onEdit={openEdit} onRemove={setShowRemoval} onDelete={deleteScaffold}/></section>}
       {tab==='inspecoes' && <section className="panel"><div className="panel-heading"><div><h2>Histórico de inspeções</h2><p>Registre as condições observadas e acompanhe as pendências.</p></div><button className="btn primary" onClick={()=>setShowInspection(true)}><Plus size={17}/> Registrar inspeção</button></div><div className="inspection-list">{inspections.map(i=>{const s=scaffolds.find(x=>x.id===i.scaffold_id);return <div className="inspection-row" key={i.id}><div className={`condition-icon ${i.condition}`}><ClipboardList size={20}/></div><div className="inspection-main"><div className="inspection-title">{s?.code || 'Andaime'} · {s?.work_site || 'Obra não informada'}<span className={`pill ${i.condition}`}>{conditionLabel[i.condition]}</span></div><p>{i.notes || 'Sem observações registradas.'}</p><small>{i.inspector} · {new Date(`${i.inspected_at}T00:00:00`).toLocaleDateString('pt-BR')}</small></div></div>})}{!inspections.length && <Empty text="Nenhuma inspeção registrada ainda."/>}</div></section>}
+{tab==='clientes-obras' && <ClientsWorks />}
       {loading && <div className="loading-line">Atualizando dados…</div>}
     </main>
     {showForm && <Modal title={editing?'Editar montagem':'Cadastrar nova montagem'} onClose={()=>setShowForm(false)}><form className="form-grid" onSubmit={saveScaffold}>
