@@ -1,4 +1,4 @@
-﻿/// <reference types="vite/client" />
+/// <reference types="vite/client" />
 import { createClient } from '@supabase/supabase-js'
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined
@@ -10,6 +10,7 @@ export const supabase = isSupabaseConfigured ? createClient(url!, anonKey!) : nu
 export type ScaffoldStatus = 'montado' | 'aguardando_retirada' | 'retirado'
 export type Scaffold = {
   id: string
+  work_id: string | null
   code: string
   client: string
   work_site: string

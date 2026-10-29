@@ -14,10 +14,31 @@ import ClientsWorks from './ClientsWorks'
 
 type Tab = 'painel' | 'montagens' | 'inspecoes' | 'clientes-obras'
 type Role = 'admin' | 'viewer' | null
+type ScaffoldMaterial = {
+  id: string
+  scaffold_id: string
+  material_name: string
+  quantity: number
+  unit: string
+  created_at: string
+}
+type Work = {
+  id: string
+  name: string
+  client_id: string | null
+  address: string | null
+  responsible: string | null
+  start_date: string | null
+  end_date: string | null
+  status: 'planejada' | 'ativa' | 'pausada' | 'concluida'
+  notes: string | null
+}
 
   const emptyForm = {
   code: '',
-  client: '',  work_site: '',
+  work_id: '',
+  client: '',
+  work_site: '',
   requester: '',
   description: '',
   mounted_at: today(),
@@ -41,15 +62,34 @@ export default function App() {
   const [tab, setTab] = useState<Tab>('painel')
   const [scaffolds, setScaffolds] = useState<Scaffold[]>([])
   const [inspections, setInspections] = useState<Inspection[]>([])
+  const [works, setWorks] = useState<Work[]>([])
   const [loading, setLoading] = useState(false)
   const [notice, setNotice] = useState('')
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('todos')
+  const [workFilter, setWorkFilter] = useState('todas')
   const [pdfType, setPdfType] = useState<'montados' | 'desmontados' | 'todos'>('todos')
 
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Scaffold | null>(null)
   const [selected, setSelected] = useState<Scaffold | null>(null)
+  useEffect(() => {
+    if (!selected) {
+      setMaterials([])
+      setMaterialName('')
+      setMaterialQuantity('')
+      setMaterialUnit('un')
+      return
+    }
+
+    void loadMaterials(selected.id)
+  }, [selected?.id])
+  const [materials, setMaterials] = useState<ScaffoldMaterial[]>([])
+  const [materialName, setMaterialName] = useState('')
+  const [materialQuantity, setMaterialQuantity] = useState('')
+  const [materialUnit, setMaterialUnit] = useState('un')
+  const [loadingMaterials, setLoadingMaterials] = useState(false)
+  const [savingMaterial, setSavingMaterial] = useState(false)
   const [form, setForm] = useState({ ...emptyForm })
 
   const [showInspection, setShowInspection] = useState(false)
@@ -134,7 +174,7 @@ export default function App() {
     setLoading(true)
 
     try {
-      const [s, i] = await Promise.all([
+      const [s, i, w] = await Promise.all([
         supabase
           .from('scaffolds')
           .select('*')
@@ -142,7 +182,11 @@ export default function App() {
         supabase
           .from('scaffold_inspections')
           .select('*')
-          .order('inspected_at', { ascending: false })
+          .order('inspected_at', { ascending: false }),
+        supabase
+          .from('works')
+          .select('*')
+          .order('name', { ascending: true })
       ])
 
       if (s.error) {
@@ -155,6 +199,12 @@ export default function App() {
         notify(`Erro ao carregar inspeções: ${i.error.message}`)
       } else {
         setInspections((i.data || []) as Inspection[])
+      }
+
+      if (w.error) {
+        notify(`Erro ao carregar obras: ${w.error.message}`)
+      } else {
+        setWorks((w.data || []) as Work[])
       }
     } finally {
       setLoading(false)
@@ -201,9 +251,104 @@ export default function App() {
     ].join(' ').toLowerCase()
 
     return haystack.includes(query.toLowerCase()) &&
-      (statusFilter === 'todos' || s.status === statusFilter)
-  }), [scaffolds, query, statusFilter])
+      (statusFilter === 'todos' || s.status === statusFilter) &&
+      (workFilter === 'todas' || s.work_id === workFilter)
+  }), [scaffolds, query, statusFilter, workFilter])
+  async function loadMaterials(scaffoldId: string) {
+    if (!supabase) return
 
+    setLoadingMaterials(true)
+
+    try {
+      const { data, error } = await supabase
+        .from('scaffold_materials')
+        .select('*')
+        .eq('scaffold_id', scaffoldId)
+        .order('created_at', { ascending: true })
+
+      if (error) {
+        notify(`Erro ao carregar materiais: ${error.message}`)
+        setMaterials([])
+        return
+      }
+
+      setMaterials((data || []) as ScaffoldMaterial[])
+    } finally {
+      setLoadingMaterials(false)
+    }
+  }
+
+  async function saveMaterial(e: FormEvent) {
+    e.preventDefault()
+
+    if (!supabase || !selected || !isAdmin) return
+
+    const name = materialName.trim()
+    const quantity = Number(materialQuantity)
+
+    if (!name) {
+      notify('Informe o nome do material.')
+      return
+    }
+
+    if (!materialQuantity.trim() || !Number.isFinite(quantity) || quantity <= 0) {
+      notify('Informe uma quantidade maior que zero.')
+      return
+    }
+
+    setSavingMaterial(true)
+
+    try {
+      const { error } = await supabase
+        .from('scaffold_materials')
+        .insert({
+          scaffold_id: selected.id,
+          material_name: name,
+          quantity,
+          unit: materialUnit
+        })
+
+      if (error) {
+        notify(`Erro ao salvar material: ${error.message}`)
+        return
+      }
+
+      setMaterialName('')
+      setMaterialQuantity('')
+      setMaterialUnit('un')
+
+      await loadMaterials(selected.id)
+      notify('Material cadastrado com sucesso.')
+    } finally {
+      setSavingMaterial(false)
+    }
+  }
+
+  async function deleteMaterial(material: ScaffoldMaterial) {
+    if (!supabase || !isAdmin) return
+
+    const confirmed = window.confirm(
+      `Deseja excluir o material "${material.material_name}"?`
+    )
+
+    if (!confirmed) return
+
+    const { error } = await supabase
+      .from('scaffold_materials')
+      .delete()
+      .eq('id', material.id)
+
+    if (error) {
+      notify(`Erro ao excluir material: ${error.message}`)
+      return
+    }
+
+    if (selected) {
+      await loadMaterials(selected.id)
+    }
+
+    notify('Material excluído com sucesso.')
+  }
   async function login(e: FormEvent) {
     e.preventDefault()
     if (!supabase) return
@@ -290,6 +435,7 @@ export default function App() {
     setTab('painel')
   }
 
+  
   function openNew() {
     if (!isAdmin) {
       notify('Seu perfil permite apenas consulta.')
@@ -299,8 +445,7 @@ export default function App() {
     setEditing(null)
     setForm({ ...emptyForm })
     setShowForm(true)
-  }
-
+  }   
   function openEdit(item: Scaffold) {
     if (!isAdmin) {
       notify('Seu perfil permite apenas consulta.')
@@ -310,6 +455,7 @@ export default function App() {
     setEditing(item)
     setForm({
       code: item.code,
+      work_id: item.work_id || '',
       client: item.client,
       work_site: item.work_site,
       requester: item.requester,
@@ -335,6 +481,7 @@ export default function App() {
 
     const payload = {
       ...form,
+      work_id: form.work_id || null,
       notes: form.notes || null
     }
 
@@ -984,6 +1131,16 @@ async function exportPdf() {
                 <option value="aguardando_retirada">Aguardando retirada</option>
                 <option value="retirado">Retirado</option>
               </select>
+              <select
+                aria-label="Filtrar montagens por obra"
+                value={workFilter}
+                onChange={e => setWorkFilter(e.target.value)}
+              >
+                <option value="todas">Todas as obras</option>
+                {works.map(work => (
+                  <option key={work.id} value={work.id}>{work.name}</option>
+                ))}
+              </select>
             </div>
 
             <ScaffoldTable
@@ -1072,14 +1229,39 @@ async function exportPdf() {
       placeholder="Nome do cliente"
     />
  </label>         
-             <label>Obra / local
-              <input
-                required
-                value={form.work_site}
-                onChange={e => setForm({ ...form, work_site: e.target.value })}
-                placeholder="Ex.: Unidade industrial"
-              />
-            </label>
+             <label>Obra cadastrada
+             <select
+             required
+             value={form.work_id}
+             onChange={e => {
+              const work = works.find(item => item.id === e.target.value)
+            setForm({
+              ...form,
+             work_id: e.target.value,
+             work_site: work ? work.name : ''
+      })
+    }}
+  >
+    <option value="">Selecione uma obra</option>
+    {works.map(work => (
+      <option key={work.id} value={work.id}>
+        {work.name}
+      </option>
+    ))}
+  </select>
+  {!works.length && (
+    <small>Cadastre uma obra na aba Clientes e obras antes de criar a montagem.</small>
+  )}
+</label>
+
+<label>Local da montagem
+  <input
+    required
+    value={form.work_site}
+    onChange={e => setForm({ ...form, work_site: e.target.value })}
+    placeholder="Local exato dentro da obra"
+  />
+</label>
             <label>Solicitante
               <input
                 required
@@ -1264,7 +1446,94 @@ async function exportPdf() {
               </div>
             ))}
           </div>
-          <div className="modal-actions">
+          
+          <section className="materials-section">
+            <h3>Materiais desta montagem</h3>
+
+            {loadingMaterials ? (
+              <p>Carregando materiais...</p>
+            ) : materials.length === 0 ? (
+              <p>Nenhum material cadastrado nesta montagem.</p>
+            ) : (
+              <div className="materials-list">
+                {materials.map(material => (
+                  <div className="material-row" key={material.id}>
+                    <div>
+                      <strong>{material.material_name}</strong>
+                      <p>
+                        {material.quantity} {material.unit}
+                      </p>
+                    </div>
+
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        className="btn secondary"
+                        onClick={() => void deleteMaterial(material)}
+                      >
+                        <Trash2 size={16} />
+                        Excluir
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {isAdmin && (
+              <form className="form-grid" onSubmit={saveMaterial}>
+                <label>
+                  Nome do material
+                  <input
+                    required
+                    value={materialName}
+                    onChange={e => setMaterialName(e.target.value)}
+                    placeholder="Ex.: tubo de andaime"
+                  />
+                </label>
+
+                <label>
+                  Quantidade
+                  <input
+                    required
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={materialQuantity}
+                    onChange={e => setMaterialQuantity(e.target.value)}
+                    placeholder="Ex.: 20"
+                  />
+                </label>
+
+                <label>
+                  Unidade
+                  <select
+                    value={materialUnit}
+                    onChange={e => setMaterialUnit(e.target.value)}
+                  >
+                    <option value="un">Unidade (un)</option>
+                    <option value="m">Metro (m)</option>
+                    <option value="m²">Metro quadrado (m²)</option>
+                    <option value="kg">Quilo (kg)</option>
+                    <option value="pç">Peça (pç)</option>
+                    <option value="jogo">Jogo</option>
+                    <option value="outro">Outro</option>
+                  </select>
+                </label>
+
+                <div className="modal-actions wide">
+                  <button
+                    className="btn primary"
+                    type="submit"
+                    disabled={savingMaterial}
+                  >
+                    {savingMaterial ? 'Salvando...' : 'Adicionar material'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </section>
+<div className="modal-actions">
             <button className="btn secondary" onClick={() => setSelected(null)}>
               Fechar
             </button>
