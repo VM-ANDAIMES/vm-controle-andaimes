@@ -20,6 +20,9 @@ type ScaffoldMaterial = {
   material_name: string
   quantity: number
   unit: string
+  material_type?: string
+  length_per_item?: number | null
+  width_per_item?: number | null
   created_at: string
 }
 type Work = {
@@ -88,6 +91,9 @@ export default function App() {
   const [materialName, setMaterialName] = useState('')
   const [materialQuantity, setMaterialQuantity] = useState('')
   const [materialUnit, setMaterialUnit] = useState('un')
+  const [materialType, setMaterialType] = useState('diverso')
+  const [materialLength, setMaterialLength] = useState('')
+  const [materialWidth, setMaterialWidth] = useState('')
   const [loadingMaterials, setLoadingMaterials] = useState(false)
   const [savingMaterial, setSavingMaterial] = useState(false)
   const [form, setForm] = useState({ ...emptyForm })
@@ -278,6 +284,7 @@ export default function App() {
     }
   }
 
+
   async function saveMaterial(e: FormEvent) {
     e.preventDefault()
 
@@ -285,6 +292,8 @@ export default function App() {
 
     const name = materialName.trim()
     const quantity = Number(materialQuantity)
+    const length = Number(materialLength)
+    const width = Number(materialWidth)
 
     if (!name) {
       notify('Informe o nome do material.')
@@ -293,6 +302,22 @@ export default function App() {
 
     if (!materialQuantity.trim() || !Number.isFinite(quantity) || quantity <= 0) {
       notify('Informe uma quantidade maior que zero.')
+      return
+    }
+
+    if (
+      (materialType === 'tubo_roll' || materialType === 'prancha') &&
+      (!materialLength.trim() || !Number.isFinite(length) || length <= 0)
+    ) {
+      notify('Informe o comprimento por peça.')
+      return
+    }
+
+    if (
+      materialType === 'prancha' &&
+      (!materialWidth.trim() || !Number.isFinite(width) || width <= 0)
+    ) {
+      notify('Informe a largura da prancha.')
       return
     }
 
@@ -305,7 +330,14 @@ export default function App() {
           scaffold_id: selected.id,
           material_name: name,
           quantity,
-          unit: materialUnit
+          unit: materialType === 'diverso' ? materialUnit : 'pç',
+          material_type: materialType,
+          length_per_item:
+            materialType === 'tubo_roll' || materialType === 'prancha'
+              ? length
+              : null,
+          width_per_item:
+            materialType === 'prancha' ? width : null
         })
 
       if (error) {
@@ -316,6 +348,9 @@ export default function App() {
       setMaterialName('')
       setMaterialQuantity('')
       setMaterialUnit('un')
+      setMaterialType('diverso')
+      setMaterialLength('')
+      setMaterialWidth('')
 
       await loadMaterials(selected.id)
       notify('Material cadastrado com sucesso.')
@@ -324,7 +359,36 @@ export default function App() {
     }
   }
 
-  async function deleteMaterial(material: ScaffoldMaterial) {
+
+  
+  const totalTubosMetros = materials.reduce((total, material) => {
+    if (material.material_type !== 'tubo_roll') return total
+
+    return total + material.quantity * Number(material.length_per_item || 0)
+  }, 0)
+
+  const totalPranchasMetros = materials.reduce((total, material) => {
+    if (material.material_type !== 'prancha') return total
+
+    return total + material.quantity * Number(material.length_per_item || 0)
+  }, 0)
+
+  const totalPranchasArea = materials.reduce((total, material) => {
+    if (material.material_type !== 'prancha') return total
+
+    return total
+      + material.quantity
+      * Number(material.length_per_item || 0)
+      * Number(material.width_per_item || 0)
+  }, 0)
+
+  function formatMeasure(value: number) {
+    return value.toLocaleString('pt-BR', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 3
+    })
+  }
+async function deleteMaterial(material: ScaffoldMaterial) {
     if (!supabase || !isAdmin) return
 
     const confirmed = window.confirm(
@@ -1456,81 +1520,205 @@ async function exportPdf() {
               <p>Nenhum material cadastrado nesta montagem.</p>
             ) : (
               <div className="materials-list">
-                {materials.map(material => (
-                  <div className="material-row" key={material.id}>
-                    <div>
-                      <strong>{material.material_name}</strong>
-                      <p>
-                        {material.quantity} {material.unit}
-                      </p>
-                    </div>
+               
+{materials.map(material => {
+  const quantity = Number(material.quantity || 0)
+  const length = Number(material.length_per_item || 0)
+  const width = Number(material.width_per_item || 0)
 
-                    {isAdmin && (
-                      <button
-                        type="button"
-                        className="btn secondary"
-                        onClick={() => void deleteMaterial(material)}
-                      >
-                        <Trash2 size={16} />
-                        Excluir
-                      </button>
-                    )}
-                  </div>
-                ))}
+  const isTube = material.material_type === 'tubo_roll'
+  const isPlank = material.material_type === 'prancha'
+
+  const linearMeters =
+    (isTube || isPlank) ? quantity * length : 0
+
+  const area =
+    isPlank ? quantity * length * width : 0
+
+  return (
+    <div className="material-row" key={material.id}>
+      <div>
+        <strong>{material.material_name}</strong>
+
+        {isTube && (
+          <p>
+            Tubo Roll: {formatMeasure(quantity)} peças ×{' '}
+            {formatMeasure(length)} m ={' '}
+            <strong>{formatMeasure(linearMeters)} m lineares</strong>
+          </p>
+        )}
+
+        {isPlank && (
+          <>
+            <p>
+              Pranchas: {formatMeasure(quantity)} peças ×{' '}
+              {formatMeasure(length)} m ={' '}
+              <strong>{formatMeasure(linearMeters)} m lineares</strong>
+            </p>
+            <p>
+              Largura: {formatMeasure(width)} m · Área total:{' '}
+              <strong>{formatMeasure(area)} m²</strong>
+            </p>
+          </>
+        )}
+
+        {material.material_type !== 'tubo_roll' &&
+          material.material_type !== 'prancha' && (
+            <p>
+              {formatMeasure(quantity)} {material.unit}
+            </p>
+          )}
+      </div>
+
+      {isAdmin && (
+        <button
+          type="button"
+          className="btn secondary"
+          onClick={() => void deleteMaterial(material)}
+        >
+          <Trash2 size={16} />
+          Excluir
+        </button>
+      )}
+    </div>
+  )
+})}
               </div>
             )}
 
             {isAdmin && (
-              <form className="form-grid" onSubmit={saveMaterial}>
-                <label>
-                  Nome do material
-                  <input
-                    required
-                    value={materialName}
-                    onChange={e => setMaterialName(e.target.value)}
-                    placeholder="Ex.: tubo de andaime"
-                  />
-                </label>
+             
+<form className="form-grid" onSubmit={saveMaterial}>
+  <label className="wide">
+    Tipo de material
+    <select
+      value={materialType}
+      onChange={e => setMaterialType(e.target.value)}
+    >
+      <option value="tubo_roll">Tubo Roll</option>
+      <option value="prancha">Prancha</option>
+      <option value="diverso">Material diverso</option>
+    </select>
+  </label>
 
-                <label>
-                  Quantidade
-                  <input
-                    required
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    value={materialQuantity}
-                    onChange={e => setMaterialQuantity(e.target.value)}
-                    placeholder="Ex.: 20"
-                  />
-                </label>
+  <label>
+    Nome do material
+    <input
+      required
+      value={materialName}
+      onChange={e => setMaterialName(e.target.value)}
+      placeholder={
+        materialType === 'tubo_roll'
+          ? 'Ex.: Tubo Roll galvanizado'
+          : materialType === 'prancha'
+            ? 'Ex.: Prancha metálica'
+            : 'Ex.: Abraçadeira'
+      }
+    />
+  </label>
 
-                <label>
-                  Unidade
-                  <select
-                    value={materialUnit}
-                    onChange={e => setMaterialUnit(e.target.value)}
-                  >
-                    <option value="un">Unidade (un)</option>
-                    <option value="m">Metro (m)</option>
-                    <option value="m²">Metro quadrado (m²)</option>
-                    <option value="kg">Quilo (kg)</option>
-                    <option value="pç">Peça (pç)</option>
-                    <option value="jogo">Jogo</option>
-                    <option value="outro">Outro</option>
-                  </select>
-                </label>
+  <label>
+    Quantidade de peças / itens
+    <input
+      required
+      type="number"
+      min="0.01"
+      step="0.01"
+      value={materialQuantity}
+      onChange={e => setMaterialQuantity(e.target.value)}
+      placeholder="Ex.: 20"
+    />
+  </label>
 
-                <div className="modal-actions wide">
-                  <button
-                    className="btn primary"
-                    type="submit"
-                    disabled={savingMaterial}
-                  >
-                    {savingMaterial ? 'Salvando...' : 'Adicionar material'}
-                  </button>
-                </div>
-              </form>
+  {(materialType === 'tubo_roll' ||
+    materialType === 'prancha') && (
+    <label>
+      Comprimento por peça (m)
+      <input
+        required
+        type="number"
+        min="0.001"
+        step="0.001"
+        value={materialLength}
+        onChange={e => setMaterialLength(e.target.value)}
+        placeholder="Ex.: 3"
+      />
+    </label>
+  )}
+
+  {materialType === 'prancha' && (
+    <label>
+      Largura por prancha (m)
+      <input
+        required
+        type="number"
+        min="0.001"
+        step="0.001"
+        value={materialWidth}
+        onChange={e => setMaterialWidth(e.target.value)}
+        placeholder="Ex.: 0,20"
+      />
+    </label>
+  )}
+
+  {materialType === 'diverso' && (
+    <label>
+      Unidade
+      <select
+        value={materialUnit}
+        onChange={e => setMaterialUnit(e.target.value)}
+      >
+        <option value="un">Unidade (un)</option>
+        <option value="m">Metro (m)</option>
+        <option value="m²">Metro quadrado (m²)</option>
+        <option value="kg">Quilo (kg)</option>
+        <option value="pç">Peça (pç)</option>
+        <option value="jogo">Jogo</option>
+        <option value="outro">Outro</option>
+      </select>
+    </label>
+  )}
+
+  {(materialType === 'tubo_roll' ||
+    materialType === 'prancha') &&
+    materialQuantity &&
+    materialLength && (
+      <div className="wide">
+        <p>
+          Total estimado de comprimento:{' '}
+          <strong>
+            {formatMeasure(
+              Number(materialQuantity) * Number(materialLength)
+            )} m
+          </strong>
+        </p>
+
+        {materialType === 'prancha' &&
+          materialWidth && (
+            <p>
+              Área total estimada:{' '}
+              <strong>
+                {formatMeasure(
+                  Number(materialQuantity) *
+                  Number(materialLength) *
+                  Number(materialWidth)
+                )} m²
+              </strong>
+            </p>
+          )}
+      </div>
+    )}
+
+  <div className="modal-actions wide">
+    <button
+      className="btn primary"
+      type="submit"
+      disabled={savingMaterial}
+    >
+      {savingMaterial ? 'Salvando...' : 'Adicionar material'}
+    </button>
+  </div>
+</form>
             )}
           </section>
 <div className="modal-actions">
