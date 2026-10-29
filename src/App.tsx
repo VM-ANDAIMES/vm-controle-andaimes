@@ -285,79 +285,102 @@ export default function App() {
   }
 
 
-  async function saveMaterial(e: FormEvent) {
-    e.preventDefault()
 
-    if (!supabase || !selected || !isAdmin) return
+async function saveMaterial(e: FormEvent) {
+  e.preventDefault()
 
-    const name = materialName.trim()
-    const quantity = Number(materialQuantity)
-    const length = Number(materialLength)
-    const width = Number(materialWidth)
-
-    if (!name) {
-      notify('Informe o nome do material.')
-      return
-    }
-
-    if (!materialQuantity.trim() || !Number.isFinite(quantity) || quantity <= 0) {
-      notify('Informe uma quantidade maior que zero.')
-      return
-    }
-
-    if (
-      (materialType === 'tubo_roll' || materialType === 'prancha') &&
-      (!materialLength.trim() || !Number.isFinite(length) || length <= 0)
-    ) {
-      notify('Informe o comprimento por peça.')
-      return
-    }
-
-    if (
-      materialType === 'prancha' &&
-      (!materialWidth.trim() || !Number.isFinite(width) || width <= 0)
-    ) {
-      notify('Informe a largura da prancha.')
-      return
-    }
-
-    setSavingMaterial(true)
-
-    try {
-      const { error } = await supabase
-        .from('scaffold_materials')
-        .insert({
-          scaffold_id: selected.id,
-          material_name: name,
-          quantity,
-          unit: materialType === 'diverso' ? materialUnit : 'pç',
-          material_type: materialType,
-          length_per_item:
-            materialType === 'tubo_roll' || materialType === 'prancha'
-              ? length
-              : null,
-          width_per_item:
-            materialType === 'prancha' ? width : null
-        })
-
-      if (error) {
-        notify(`Erro ao salvar material: ${error.message}`)
-        return
-      }
-
-      setMaterialName('')
-      setMaterialQuantity('')
-      setMaterialUnit('un')
-      setMaterialType('diverso')
-      setMaterialLength('')
-      setMaterialWidth('')
-
-      await loadMaterials(selected.id)
-      notify('Material cadastrado com sucesso.')
-    } finally {
-      setSavingMaterial(false)
-    }
+  if (!supabase) {
+    notify('Erro: conexão com o banco de dados não configurada.')
+    return
   }
+
+  if (!selected) {
+    notify('Selecione uma montagem antes de adicionar material.')
+    return
+  }
+
+  if (!isAdmin) {
+    notify('Você não tem permissão para cadastrar materiais.')
+    return
+  }
+
+  const name = materialName.trim()
+  const quantity = Number(materialQuantity)
+  const length = Number(materialLength)
+  const width = Number(materialWidth)
+
+  if (!name) {
+    notify('Informe o nome do material.')
+    return
+  }
+
+  if (!materialQuantity.trim() || !Number.isFinite(quantity) || quantity <= 0) {
+    notify('Informe uma quantidade maior que zero.')
+    return
+  }
+
+  if (
+    (materialType === 'tubo_roll' || materialType === 'prancha') &&
+    (!materialLength.trim() || !Number.isFinite(length) || length <= 0)
+  ) {
+    notify('Informe o comprimento por peça.')
+    return
+  }
+
+  if (
+    materialType === 'prancha' &&
+    (!materialWidth.trim() || !Number.isFinite(width) || width <= 0)
+  ) {
+    notify('Informe a largura da prancha.')
+    return
+  }
+
+  setSavingMaterial(true)
+
+  try {
+    const { error } = await supabase
+      .from('scaffold_materials')
+      .insert({
+        scaffold_id: selected.id,
+        material_name: name,
+        quantity,
+        unit: materialType === 'diverso' ? materialUnit : 'pç',
+        material_type: materialType,
+        length_per_item:
+          materialType === 'tubo_roll' || materialType === 'prancha'
+            ? length
+            : null,
+        width_per_item:
+          materialType === 'prancha' ? width : null
+      })
+
+    if (error) {
+      console.error('Erro Supabase ao salvar material:', error)
+      notify(`Erro ao salvar material: ${error.message}`)
+      return
+    }
+
+    await loadMaterials(selected.id)
+
+    setMaterialName('')
+    setMaterialQuantity('')
+    setMaterialUnit('un')
+    setMaterialType('diverso')
+    setMaterialLength('')
+    setMaterialWidth('')
+
+    notify('Material cadastrado com sucesso.')
+  } catch (error) {
+    console.error('Falha inesperada ao salvar material:', error)
+    notify(
+      `Falha ao salvar material: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    )
+  } finally {
+    setSavingMaterial(false)
+  }
+}
 
 
   
