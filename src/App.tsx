@@ -1,6 +1,9 @@
-
+import { registerDeviceNotifications } from './notifications'
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { jsPDF } from 'jspdf'
+import { Capacitor } from '@capacitor/core'
+import { Directory, Filesystem } from '@capacitor/filesystem'
+import { Share } from '@capacitor/share'
 import {
   Activity, AlertTriangle, ArrowDownToLine, Check, ClipboardList,
   Clock3, Construction, Database, FilePlus2, LogOut, Plus,
@@ -11,8 +14,9 @@ import {
   Scaffold, ScaffoldStatus, statusLabel, supabase, today
 } from './lib'
 import ClientsWorks from './ClientsWorks'
+import Quotations from './Quotations'
 
-type Tab = 'painel' | 'montagens' | 'inspecoes' | 'clientes-obras'
+type Tab = 'painel' | 'montagens' | 'inspecoes' | 'clientes-obras' | 'orcamentos'
 type Role = 'admin' | 'viewer' | null
 type ScaffoldMaterial = {
   id: string
@@ -49,7 +53,51 @@ type Work = {
   notes: '',
   status: 'montado' as ScaffoldStatus
 }
+async function deliverExportFile(blob: Blob, fileName: string) {
+  try {
+    if (Capacitor.isNativePlatform()) {
+      const reader = new FileReader()
 
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => {
+          const result = String(reader.result)
+          resolve(result.split(',')[1])
+        }
+        reader.onerror = () => reject(reader.error)
+        reader.readAsDataURL(blob)
+      })
+
+      const file = await Filesystem.writeFile({
+        path: fileName,
+        data: base64,
+        directory: Directory.Cache,
+      })
+
+      await Share.share({
+        title: fileName,
+        text: 'Relatório da VM Andaimes',
+        url: file.uri,
+        dialogTitle: 'Salvar ou compartilhar relatório',
+      })
+
+      return
+    }
+
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+
+    link.href = url
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+
+    window.setTimeout(() => URL.revokeObjectURL(url), 3000)
+  } catch (error) {
+    console.error('Erro ao exportar arquivo:', error)
+    alert('Não foi possível exportar o arquivo. Tente novamente.')
+  }
+}
 export default function App() {
   const [session, setSession] = useState<any>(null)
   const [role, setRole] = useState<Role>(null)
@@ -140,6 +188,37 @@ export default function App() {
 
     return () => listener.subscription.unsubscribe()
   }, [])
+
+  // Registra o dispositivo no Firebase após o login.
+  useEffect(() => {
+    const userId = session?.user?.id
+
+    if (!userId) return
+
+    let cancelled = false
+    let removeListeners: (() => void) | undefined
+
+    registerDeviceNotifications(userId)
+      .then((cleanup) => {
+        if (cancelled) {
+          cleanup()
+        } else {
+          removeListeners = cleanup
+        }
+      })
+      .catch((error) => {
+        console.error(
+          'Não foi possível ativar as notificações:',
+          error
+        )
+      })
+
+    return () => {
+      cancelled = true
+      removeListeners?.()
+    }
+  }, [session?.user?.id])
+
 
   // Consulta o perfil registrado no Supabase.
   useEffect(() => {
@@ -833,9 +912,12 @@ async function exportPdf() {
     pdf.text(`Página ${page} de ${totalPages}`, pageWidth - margin, pageHeight - 8, { align: 'right' })
   }
 
-  pdf.save(`VM-Andaimes-Relatorio-${pdfType}-${today()}.pdf`)
+ await deliverExportFile(
+  pdf.output('blob'),
+  `VM-Andaimes-Relatorio-${pdfType}-${today()}.pdf`
+)
 }
-  function exportCsv() {
+  async function exportCsv() {
     const headers = [
       'Código', 'Cliente', 'Obra', 'Solicitante', 'Descrição',
       'Data montagem', 'Dias montado', 'Responsável', 'Status',
@@ -863,16 +945,14 @@ async function exportPdf() {
       )
       .join('\r\n')
 
-    const blob = new Blob(['\ufeff' + csv], {
+       const blob = new Blob(['\ufeff' + csv], {
       type: 'text/csv;charset=utf-8;'
     })
 
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'controle-andaimes-vm.csv'
-    a.click()
-    URL.revokeObjectURL(url)
+    await deliverExportFile(
+      blob,
+      'controle-andaimes-vm.csv'
+    )
   }
 
   if (!isSupabaseConfigured) return <SetupScreen />
@@ -1033,6 +1113,12 @@ async function exportPdf() {
         >
           <Construction size={18}/> Clientes e Obras
         </button>
+<button
+  className={`nav-item ${tab === 'orcamentos' ? 'active' : ''}`}
+  onClick={() => setTab('orcamentos')}
+>
+  <FileText size={18}/> Orçamentos
+</button>
 
         <div className="sidebar-bottom">
           <div className="safe-box">
@@ -1065,7 +1151,9 @@ async function exportPdf() {
                   ? 'Controle de montagens'
                   : tab === 'inspecoes'
                     ? 'Inspeções registradas'
-                    : 'Clientes e Obras'}
+                    : tab === 'clientes-obras'
+                    ? 'Clientes e Obras'
+                    : 'Orçamentos'}
             </h1>
           </div>
           <div className="top-actions">
@@ -1289,6 +1377,7 @@ async function exportPdf() {
         )}
 
         {tab === 'clientes-obras' && <ClientsWorks readOnly={!isAdmin} />}
+        {tab === 'orcamentos' && <Quotations readOnly={!isAdmin} />}
 
         {loading && <div className="loading-line">Atualizando dados…</div>}
       </main>
@@ -1593,7 +1682,7 @@ async function exportPdf() {
           )}
       </div>
 
-      {isAdmin && (
+      {isAdmin && tab === 'montagens' && (
         <button
           type="button"
           className="btn secondary"

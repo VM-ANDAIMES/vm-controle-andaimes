@@ -3,3 +3,8 @@ dist
 .env
 .env.local
 .DS_Store
+# Configuracoes locais do Firebase
+android/app/google-services.json
+
+# Configuracoes do Android Studio
+.idea/
