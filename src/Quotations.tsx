@@ -203,11 +203,31 @@ function editQuote(q: Quote) {
     await loadQuotes()
   }
 
-  const getExportItems = (source: Item[]) => source
+  const getExportItems = (source: Item[]) => {
+  const filtered = source.filter(i =>
+    [i.description, i.tag, i.area, i.height, i.length, i.width, i.assembly, i.project, i.status]
+      .some(v => String(v || '').trim())
+  )
 
-    .filter(i => [i.description, i.tag, i.area, i.height, i.length, i.width, i.assembly, i.project, i.status]
-      .some(v => String(v || '').trim()))
-    .map((item, index) => ({ ...item, item: String(index + 1).padStart(2, '0') }))
+  let sequence = 0
+  let previousDescription = ''
+
+  return filtered.map(item => {
+    const description = String(item.description || '').trim()
+
+    if (!description || description !== previousDescription) {
+      sequence++
+    }
+
+    previousDescription = description
+
+    return {
+      ...item,
+      item: String(sequence).padStart(2, '0')
+    }
+  })
+}
+
 
   
   async function exportSpreadsheet(quote: Partial<Quote> & { items: Item[]; client_name: string; quote_date: string; discount: number; extra_cost: number }) {
@@ -280,6 +300,7 @@ function editQuote(q: Quote) {
       }
 
       if (endRow > startRow) {
+        sheet.mergeCells(startRow, 1, endRow, 1)
         sheet.mergeCells(startRow, 2, endRow, 2)
       }
 
@@ -467,77 +488,118 @@ function editQuote(q: Quote) {
 
     drawHeader()
 
-    rows.forEach(item => {
-      const values = [
-        item.item,
-        item.description || '',
-        item.tag || '',
-        item.area || '',
-        item.height || '',
-        item.length || '',
-        item.width || '',
-        item.assembly || '',
-        item.project || '',
-        item.status || ''
-      ]
+    let rowIndex = 0
 
-      const wrapped = values.map((value, index) =>
-        pdf.splitTextToSize(
-          String(value),
-          widths[index] - 2
+    while (rowIndex < rows.length) {
+      const groupStart = rowIndex
+      const groupItem = rows[rowIndex].item
+      const groupRows: any[] = []
+
+      while (rowIndex < rows.length && rows[rowIndex].item === groupItem) {
+        const item = rows[rowIndex]
+
+        const values = [
+          item.item,
+          item.description || '',
+          item.tag || '',
+          item.area || '',
+          item.height || '',
+          item.length || '',
+          item.width || '',
+          item.assembly || '',
+          item.project || '',
+          item.status || ''
+        ]
+
+        const wrapped = values.map((value, index) =>
+          pdf.splitTextToSize(String(value), widths[index] - 2)
         )
+
+        const rowHeight = Math.max(
+          7,
+          ...wrapped.map(lines => lines.length * 3.2 + 2)
+        )
+
+        groupRows.push({ item, wrapped, rowHeight })
+        rowIndex++
+      }
+
+      const groupHeight = groupRows.reduce(
+        (total, row) => total + row.rowHeight, 0
       )
 
-      const rowHeight = Math.max(
-        7,
-        ...wrapped.map(lines => lines.length * 3.2 + 2)
-      )
-
-      if (y + rowHeight > pageBottom) {
+      if (y + groupHeight > pageBottom) {
         pdf.addPage()
         y = 8
         drawHeader()
       }
 
-      values.forEach((_, index) => {
+      // ITEM e DESCRICAO mesclados verticalmente
+      ;[0, 1].forEach(index => {
         const cx = xPositions[index]
         const width = widths[index]
 
-        pdf.setFillColor(
-          index < 8 ? 241 : 255,
-          index < 8 ? 242 : 255,
-          index < 8 ? 245 : 255
-        )
-
+        pdf.setFillColor(241, 242, 245)
         pdf.setDrawColor(0, 0, 0)
         pdf.setLineWidth(thinBlack)
+        pdf.rect(cx, y, width, groupHeight, 'FD')
 
-        pdf.rect(
-          cx,
-          y,
-          width,
-          rowHeight,
-          'FD'
-        )
+        const lines = groupRows[0].wrapped[index]
 
         pdf.setFont('helvetica', 'normal')
         pdf.setFontSize(7)
         pdf.setTextColor(17, 17, 17)
 
-        const lines = wrapped[index]
-
         if (lines.length > 0) {
+          const textHeight = (lines.length - 1) * 3.2
           pdf.text(
             lines,
             cx + width / 2,
-            y + 3.8,
+            y + groupHeight / 2 - textHeight / 2 + 1.5,
             { align: 'center' }
           )
         }
       })
 
-      y += rowHeight
-    })
+      // Demais colunas continuam separadas por equipamento
+      let currentY = y
+
+      groupRows.forEach(row => {
+        for (let index = 2; index < 10; index++) {
+          const cx = xPositions[index]
+          const width = widths[index]
+
+          pdf.setFillColor(
+            index < 8 ? 241 : 255,
+            index < 8 ? 242 : 255,
+            index < 8 ? 245 : 255
+          )
+
+          pdf.setDrawColor(0, 0, 0)
+          pdf.setLineWidth(thinBlack)
+          pdf.rect(cx, currentY, width, row.rowHeight, 'FD')
+
+          pdf.setFont('helvetica', 'normal')
+          pdf.setFontSize(7)
+          pdf.setTextColor(17, 17, 17)
+
+          const lines = row.wrapped[index]
+
+          if (lines.length > 0) {
+            pdf.text(
+              lines,
+              cx + width / 2,
+              currentY + 3.8,
+              { align: 'center' }
+            )
+          }
+        }
+
+        currentY += row.rowHeight
+      })
+
+      y += groupHeight
+    }
 
     pdf.save(
       `VM-Planilha-Pontos-${fileName(quote.client_name)}.pdf`
