@@ -25,6 +25,7 @@ type Item = {
 }
 type Quote = {
   id: string
+  tracking_id: string | null
   quote_number: string
   client_name: string
   requester: string | null
@@ -66,6 +67,8 @@ const fileName = (v: string) => (v || 'orcamento').normalize('NFD').replace(/[\u
 
 export default function Quotations({ readOnly = false }: { readOnly?: boolean }) {
   const [quotes, setQuotes] = useState<Quote[]>([])
+  const [trackingId, setTrackingId] = useState('')
+  const [searchTrackingId, setSearchTrackingId] = useState('')
   const [loading, setLoading] = useState(false)
   const [creating, setCreating] = useState(false)
   const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null)
@@ -99,9 +102,18 @@ export default function Quotations({ readOnly = false }: { readOnly?: boolean })
   ), [items])
   const subtotal = useMemo(() => filledItems.reduce((sum, i) => sum + quoteTotal(i), 0), [filledItems])
   const total = Math.max(0, subtotal - number(discount) + number(extraCost))
+  const filteredQuotes = useMemo(() => {
+    const term = searchTrackingId.trim().toLocaleLowerCase()
+    if (!term) return quotes
+
+    return quotes.filter(q =>
+      (q.tracking_id || '').toLocaleLowerCase().includes(term)
+    )
+  }, [quotes, searchTrackingId])
 
   function resetForm() {
     setEditingQuoteId(null)
+    setTrackingId('')
     setClient(''); setRequester(''); setProject(''); setWorkSite('')
     setQuoteDate(dateToday()); setValidUntil(''); setDiscount('0')
     setExtraCost('0'); setNotes('')
@@ -110,6 +122,7 @@ export default function Quotations({ readOnly = false }: { readOnly?: boolean })
   }
 function editQuote(q: Quote) {
   setEditingQuoteId(q.id)
+  setTrackingId(q.tracking_id || '')
   setClient(q.client_name || '')
   setRequester(q.requester || '')
   setProject(q.project_name || '')
@@ -146,10 +159,26 @@ function editQuote(q: Quote) {
       setMessage('Conexão com o Supabase não configurada. Confira o arquivo .env.')
       return
     }
+    const normalizedTrackingId = trackingId.trim()
+    if (!normalizedTrackingId) {
+      setMessage('Informe o ID de rastreio antes de salvar.')
+      return
+    }
+
+    const duplicateTrackingId = quotes.some(q =>
+      q.id !== editingQuoteId &&
+      (q.tracking_id || '').trim().toLocaleLowerCase() === normalizedTrackingId.toLocaleLowerCase()
+    )
+    if (duplicateTrackingId) {
+      setMessage('Este ID de rastreio já está sendo utilizado em outro orçamento. Informe um ID diferente.')
+      return
+    }
+
     if (!client.trim()) { setMessage('Informe o cliente antes de salvar.'); return }
     if (!filledItems.length) { setMessage('Preencha pelo menos uma descrição de ponto ou equipamento.'); return }
     setSaving(true); setMessage('')
     const payload = {
+      tracking_id: normalizedTrackingId,
       client_name: client.trim(), requester: requester.trim() || null,
       project_name: project.trim() || null, work_site: workSite.trim() || null,
       quote_date: quoteDate, valid_until: validUntil || null,
@@ -160,7 +189,10 @@ function editQuote(q: Quote) {
   ? await supabase.from('quotations').update(payload).eq('id', editingQuoteId)
   : await supabase.from('quotations').insert(payload)
     setSaving(false)
-    if (error) { setMessage(`Erro ao salvar: ${error.message}. Confira se a migração SQL foi executada.`); return }
+    if (error) {
+      setMessage(error.code === '23505' ? 'Este ID de rastreio já está cadastrado. Informe outro ID.' : `Erro ao salvar: ${error.message}. Confira se a migração SQL foi executada.`)
+      return
+    }
     setMessage('Orçamento salvo com sucesso.')
     await loadQuotes()
     
@@ -643,6 +675,14 @@ async function exportCurrent(kind: 'xlsx' | 'pdf') {
         <div className="quotation-editor">
           <div className="quotation-section-title"><h3>Identificação do orçamento</h3><span>Preencha os dados do cliente e projeto</span></div>
           <div className="quotation-fields">
+            <label>ID de rastreio
+              <input
+                value={trackingId}
+                onChange={e => setTrackingId(e.target.value)}
+                placeholder="Ex.: VM-2026-001"
+                maxLength={60}
+              />
+            </label>
             <label>Cliente / empresa<input value={client} onChange={e => setClient(e.target.value)} placeholder="Nome do cliente" /></label>
             <label>Solicitado por<input value={requester} onChange={e => setRequester(e.target.value)} placeholder="Nome do solicitante" /></label>
             <label>Projeto<input value={project} onChange={e => setProject(e.target.value)} placeholder="Número ou nome do projeto" /></label>
@@ -709,13 +749,24 @@ async function exportCurrent(kind: 'xlsx' | 'pdf') {
           <p className="quotation-help"><Calculator size={14}/> Cálculo automático: m² = altura × comprimento; m³ = altura × comprimento × largura; metro linear = comprimento; unidade = 1. No modo manual, informe o valor total da linha.</p>
         </div>
       )}
-      <div className="quotation-section-title quotation-list-title"><h3>Orçamentos salvos</h3><button className="btn secondary" onClick={() => void loadQuotes()}><RefreshCw size={15}/> Atualizar</button></div>
+      <div className="quotation-search">
+        <label>Pesquisar orçamento pelo ID de rastreio
+          <input
+            type="search"
+            value={searchTrackingId}
+            onChange={e => setSearchTrackingId(e.target.value)}
+            placeholder="Digite o ID para localizar o orçamento..."
+          />
+        </label>
+      </div>      <div className="quotation-section-title quotation-list-title"><h3>Orçamentos salvos</h3><button className="btn secondary" onClick={() => void loadQuotes()}><RefreshCw size={15}/> Atualizar</button></div>
       {loading ? <p className="muted">Carregando orçamentos...</p> : quotes.length === 0 ? (
         <div className="empty"><FileText size={26}/><p>Nenhum orçamento salvo ainda.</p></div>
+      ) : filteredQuotes.length === 0 ? (
+        <div className="empty"><FileText size={26}/><p>Nenhum orçamento encontrado com esse ID.</p></div>
       ) : (
-        <div className="quotation-saved-list">{quotes.map(q => (
+        <div className="quotation-saved-list">{filteredQuotes.map(q => (
           <div className="quotation-saved-row" key={q.id}>
-            <div><strong>{q.client_name}</strong><span>{q.client_name} · {q.project_name || 'Sem projeto'} · {q.quote_date}</span></div>
+            <div><strong>{q.client_name}</strong><span>ID de rastreio: {q.tracking_id || 'Ainda não informado'}</span><span>{q.client_name} · {q.project_name || 'Sem projeto'} · {q.quote_date}</span></div>
             <strong>{money(Number(q.total || 0))}</strong>
             <div className="quotation-saved-actions">
             <button

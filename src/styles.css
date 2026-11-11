@@ -565,3 +565,125 @@
   .quotation-add-actions > span { flex-basis: 100%; }
 }
 @media (max-width: 380px) { .quotation-item-grid { grid-template-columns: 1fr; } .quotation-item-grid .quotation-item-description { grid-column: auto; } }
+
+/* ACABAMENTO MODERNO - ORCAMENTOS VM */
+.quotation-module {
+  --quotation-orange: #f57c00;
+}
+
+.quotation-module .quotation-search {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin: 18px 0 22px;
+  padding: 17px;
+  background: #fafafa;
+  border: 1px solid #ededed;
+  border-radius: 12px;
+}
+
+.quotation-module .quotation-search label {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  color: #333;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.quotation-module .quotation-search input {
+  width: 100%;
+  max-width: 520px;
+  min-height: 44px;
+  padding: 11px 14px;
+  border: 1px solid #d8d8d8;
+  border-radius: 9px;
+  background: #fff;
+  color: #222;
+  font-size: 14px;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.quotation-module .quotation-search input:focus {
+  border-color: #f57c00;
+  box-shadow: 0 0 0 3px rgba(245,124,0,.13);
+}
+
+.quotation-module .quotation-list-title {
+  align-items: center;
+  margin-top: 24px;
+  padding-top: 20px;
+}
+
+.quotation-module .quotation-list-title h3 {
+  font-size: 17px;
+  font-weight: 750;
+}
+
+.quotation-module .quotation-saved-list {
+  gap: 12px;
+}
+
+.quotation-module .quotation-saved-row {
+  padding: 16px;
+  border: 1px solid #e8e8e8;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,.035);
+  transition: border-color .2s, box-shadow .2s, transform .2s;
+}
+
+.quotation-module .quotation-saved-row:hover {
+  border-color: #f5a04b;
+  box-shadow: 0 5px 16px rgba(0,0,0,.07);
+  transform: translateY(-1px);
+}
+
+.quotation-module .quotation-saved-row > div:first-child strong {
+  color: #222;
+  font-size: 14px;
+}
+
+.quotation-module .quotation-saved-row > div:first-child span:first-of-type {
+  display: inline-flex;
+  width: fit-content;
+  padding: 5px 9px;
+  border: 1px solid #ffdfbd;
+  border-radius: 6px;
+  background: #fff5eb;
+  color: #b45309;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.quotation-module .quotation-saved-row > strong {
+  font-size: 15px;
+  color: #e66d00;
+}
+
+.quotation-module .quotation-saved-actions {
+  gap: 8px;
+}
+
+.quotation-module .quotation-saved-actions .btn {
+  min-height: 36px;
+  border-radius: 8px;
+  transition: background .2s, border-color .2s;
+}
+
+@media (max-width: 760px) {
+  .quotation-module .quotation-search {
+    padding: 13px;
+  }
+
+  .quotation-module .quotation-search input {
+    max-width: none;
+  }
+
+  .quotation-module .quotation-saved-row {
+    gap: 12px;
+    padding: 13px;
+  }
+}
+
