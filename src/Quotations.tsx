@@ -121,6 +121,7 @@ export default function Quotations({ readOnly = false }: { readOnly?: boolean })
     setCreating(false); setMessage('')
   }
 function editQuote(q: Quote) {
+  if (readOnly) return
   setEditingQuoteId(q.id)
   setTrackingId(q.tracking_id || '')
   setClient(q.client_name || '')
@@ -766,15 +767,23 @@ async function exportCurrent(kind: 'xlsx' | 'pdf') {
       ) : (
         <div className="quotation-saved-list">{filteredQuotes.map(q => (
           <div className="quotation-saved-row" key={q.id}>
-            <div><strong>{q.client_name}</strong><span>ID de rastreio: {q.tracking_id || 'Ainda não informado'}</span><span>{q.client_name} · {q.project_name || 'Sem projeto'} · {q.quote_date}</span></div>
+            <div>
+  <strong>{q.client_name}</strong>
+  <span>ID de rastreio: {q.tracking_id || 'Ainda não informado'}</span>
+  <span>Projeto: {q.project_name || 'Sem projeto'} · Data: {q.quote_date}</span>
+  <span>Solicitante: {q.requester || 'Não informado'}</span>
+  <span>Local de trabalho: {q.work_site || 'Não informado'}</span>
+</div>
             <strong>{money(Number(q.total || 0))}</strong>
             <div className="quotation-saved-actions">
-            <button
-  className="btn secondary"
-  onClick={() => editQuote(q)}
->
-  Editar
-</button>
+            {!readOnly && (
+  <button
+    className="btn secondary"
+    onClick={() => editQuote(q)}
+  >
+    Editar
+  </button>
+)}
               <button className="btn secondary" onClick={() => void exportSaved(q,'xlsx')}><FileSpreadsheet size={15}/> Planilha Excel</button>
               <button className="btn secondary" onClick={() => void exportSaved(q,'pdf')}><ArrowDownToLine size={15}/> PDF</button>
 
